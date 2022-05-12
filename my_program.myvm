@@ -1,5 +1,5 @@
 program:
-0x3f
+63
 mov 0 1
 9
 mov 0 2
