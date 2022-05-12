@@ -1,4 +1,4 @@
-program = {SOI ~ (WHITE_SPACE | NEWLINE)* ~ ( input ~ input_byte+ )? ~ start_of_program ~ instruction+ ~ EOI}
+program = {SOI ~ WHITE_SPACE* ~ ( input ~ input_byte+ )? ~ start_of_program ~ action+ ~ WHITE_SPACE* ~ EOI}
 
 whitespace_not_eol = _{" " | "\t"}
 end_of_line= _{whitespace_not_eol* ~ (NEWLINE+ | EOI) }
@@ -47,6 +47,11 @@ to = { output_reg | ( ^"reg"? ~ '0'..'5')}
 input_reg = {^"input" | ^"in" | ^"i"}
 output_reg = {^"output" | ^"out" | ^"o"}
 
-mov = {WHITE_SPACE* ~ ^"mov" ~ WHITE_SPACE* ~ from ~ WHITE_SPACE* ~ to ~ end_of_line}
+mov = {WHITE_SPACE* ~ ^"mov" ~ WHITE_SPACE+ ~ from ~ WHITE_SPACE+ ~ to ~ end_of_line}
 instruction = {nop | j | jez | jnz | jgez |jgz | jlez | jlz | literal | add | sub | or | nor | xor | xnor | and | nand | mov}
+action = {instruction | label | identifier}
 
+label = {WHITE_SPACE* ~ ^"label" ~ label_ident ~ ":" ~ end_of_line}
+label_ident = {WHITE_SPACE* ~ (ASCII_ALPHA | ident_allowed_special_chars) ~ (ASCII_ALPHANUMERIC | ident_allowed_special_chars)*}
+ident_allowed_special_chars = {"_"}
+identifier = {label_ident ~ end_of_line}

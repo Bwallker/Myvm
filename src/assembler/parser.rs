@@ -2,11 +2,13 @@ use color_eyre::Result;
 use pest::iterators::{Pair, Pairs};
 use pest::Parser;
 use pest_derive::Parser;
+use std::collections::HashMap;
 
 use crate::bytecode_interpreter::run::{
     Arithmetic, Conditional, FromStore, ToStore, ARITHMETIC_PREFIX, CONDITIONAL_PREFIX,
     LITERAL_PREFIX, MOVE_PREFIX,
 };
+use crate::eyre;
 
 #[derive(Parser)]
 #[grammar = "./assembler/grammar.pest"] // relative to src
@@ -65,18 +67,59 @@ pub fn parse(program: &str) -> Result<SuccessfulParse> {
         }
     }
     assert_eq!(inside.next().unwrap().as_rule(), Rule::start_of_program);
-    for instruction in inside {
-        match instruction.as_rule() {
-            Rule::instruction => {
-                let c = instruction.clone();
-                let parsed = parse_instruction(instruction.into_inner().next().unwrap());
-                instructions.push(parsed);
+    let label_positions = find_labels(inside.clone());
+    for node in inside {
+        match node.as_rule() {
+            Rule::action => {
+                let node = node.into_inner().next().unwrap();
+                match node.as_rule() {
+                    Rule::instruction => {
+                        let parsed = parse_instruction(node.into_inner().next().unwrap());
+                        instructions.push(parsed);
+                    }
+                    Rule::label => (),
+                    Rule::identifier => {
+                        let val = *label_positions.get(node.as_str().trim()).unwrap();
+                        if val > 63 {
+                            return Err(eyre!("You tried to use a label with a value greater than 63 which is not supported."));
+                        }
+                        instructions.push((LITERAL_PREFIX << 6) | val);
+                    }
+                    _ => unreachable!(),
+                }
             }
             Rule::EOI => (),
             _ => unreachable!(),
         }
     }
     Ok(SuccessfulParse::from(input, instructions))
+}
+
+type LabelPositions<'a> = HashMap<&'a str, u8>;
+
+fn find_labels(tree: Pairs<Rule>) -> LabelPositions {
+    let mut positions = HashMap::new();
+    let mut number_of_instructions = 0;
+    for node in tree {
+        match node.as_rule() {
+            Rule::action => {
+                let node = node.into_inner().next().unwrap();
+                match node.as_rule() {
+                    Rule::label => {
+                        let ident = node.into_inner().next().unwrap();
+                        let as_str = ident.as_str().trim();
+                        positions.insert(as_str, number_of_instructions);
+                    }
+                    Rule::instruction => number_of_instructions += 1,
+                    Rule::identifier => continue,
+                    _ => unreachable!(),
+                }
+            }
+            Rule::EOI => (),
+            _ => unreachable!(),
+        }
+    }
+    positions
 }
 
 fn parse_instruction(instruction: Pair<Rule>) -> u8 {
@@ -159,18 +202,30 @@ fn parse_instruction(instruction: Pair<Rule>) -> u8 {
 // nand = {WHITE_SPACE* ~ ^"nand" ~ end_of_line}
 #[cfg(test)]
 mod tests {
+    use crate::assembler::parser::parse;
     use crate::Result;
 
     use super::{Grammar, Pairs, Parser, Rule};
 
     fn print_ast(program: &str) {
         let pairs: Pairs<Rule> = Grammar::parse(Rule::program, program).unwrap();
-        println!("{:?}", pairs.into_iter());
+        println!("{:#?}", pairs.into_iter());
     }
 
     #[test]
     fn dummy_test() -> Result<()> {
-        print_ast("program:\n");
+        let s = r#"
+            program:
+            nop
+            nop
+            nop
+            label x:
+            x
+            j
+            "#;
+        print_ast(s);
+        let r = parse(s)?;
+        println!("input: {:#?}, program: {:#?}", r.input, r.program);
         panic!()
     }
 }
