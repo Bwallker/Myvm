@@ -1,0 +1,9 @@
+program:
+0x3f
+mov 0 1
+2
+mov 0 2
+add
+mov 3 out
+5
+j

@@ -1,0 +1,20 @@
+[package]
+name = "my_vm"
+version = "0.1.0"
+edition = "2021"
+authors = ["Bwallker <bwallker.com>"]
+description = "This program implements a virtual machine similar to,\n but not the same as the machine you build in the game Turing Complete."
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+
+color-eyre = { version = "0.6.1", default-features = false }
+pest = "2.1.3"
+pest_derive = "2.1.0"
+enum-utils = "0.1.2"
+[dependencies.clap]
+version = "3.1.17"
+features = ["derive"]
+
+[profile.release]
+strip = true
