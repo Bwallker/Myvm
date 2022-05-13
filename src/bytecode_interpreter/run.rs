@@ -12,22 +12,22 @@ macro_rules! unreachable_unsafe {
     }};
 }
 #[allow(dead_code)]
-pub const ARITHMETIC_PREFIX: u8 = 0;
+pub const LITERAL_PREFIX: u8 = 0;
 #[allow(dead_code)]
 pub const CONDITIONAL_PREFIX: u8 = 1;
 #[allow(dead_code)]
 pub const MOVE_PREFIX: u8 = 2;
 #[allow(dead_code)]
-pub const LITERAL_PREFIX: u8 = 3;
+pub const ARITHMETIC_PREFIX: u8 = 3;
 
 #[allow(dead_code)]
 pub struct InstructionType;
 
 impl InstructionType {
-    pub const ARITHMETIC: u8 = 0;
+    pub const LOAD_LITERAL: u8 = 0 << 6;
     pub const CONDITIONAL: u8 = 1 << 6;
     pub const MOVE: u8 = 2 << 6;
-    pub const LOAD_LITERAL: u8 = 3 << 6;
+    pub const ARITHMETIC: u8 = 3 << 6;
 }
 
 pub struct FromStore;

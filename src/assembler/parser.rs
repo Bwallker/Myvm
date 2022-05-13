@@ -111,7 +111,7 @@ fn find_labels(tree: Pairs<Rule>) -> LabelPositions {
                         positions.insert(as_str, number_of_instructions);
                     }
                     Rule::instruction => number_of_instructions += 1,
-                    Rule::identifier => continue,
+                    Rule::identifier => number_of_instructions += 1,
                     _ => unreachable!(),
                 }
             }
@@ -216,11 +216,31 @@ mod tests {
     fn dummy_test() -> Result<()> {
         let s = r#"
             program:
-            nop
-            nop
-            nop
-            label x:
-            x
+            reset_to_zero
+            j
+            
+            label loop:
+            mov 3 output
+            mov 3 1
+            add
+            10
+            mov 0 output
+            58
+            mov 0 2
+            sub
+            reset_to_zero
+            jez
+            1
+            mov 0 2
+            loop
+            j
+            label reset_to_zero:
+            48
+            mov 0 1
+            mov 0 3
+            1
+            mov 0 2
+            loop
             j
             "#;
         print_ast(s);
