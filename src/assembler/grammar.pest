@@ -1,4 +1,7 @@
-program = {SOI ~ WHITE_SPACE* ~ ( input ~ input_byte+ )? ~ start_of_program ~ action+ ~ WHITE_SPACE* ~ EOI}
+/// Link to docs: https://docs.rs/pest_derive/2.1.0/pest_derive/
+/// Link to book: https://pest.rs/book/
+
+program = {SOI ~ WHITE_SPACE* ~ (start_of_macros ~ macro_def+)? ~ ( input ~ input_byte+ )? ~ start_of_program ~ action+ ~ WHITE_SPACE* ~ EOI}
 
 whitespace_not_eol = _{" " | "\t"}
 end_of_line= _{whitespace_not_eol* ~ (NEWLINE+ | EOI) }
@@ -49,9 +52,14 @@ output_reg = {^"output" | ^"out" | ^"o"}
 
 mov = {WHITE_SPACE* ~ ^"mov" ~ WHITE_SPACE+ ~ from ~ WHITE_SPACE+ ~ to ~ end_of_line}
 instruction = {nop | j | jez | jnz | jgez |jgz | jlez | jlz | literal | add | sub | or | nor | xor | xnor | and | nand | mov}
-action = {instruction | label | identifier}
+action = {instruction | label | jump_to_label}
 
-label = {WHITE_SPACE* ~ ^"label" ~ label_ident ~ ":" ~ end_of_line}
-label_ident = {WHITE_SPACE* ~ (ASCII_ALPHA | ident_allowed_special_chars) ~ (ASCII_ALPHANUMERIC | ident_allowed_special_chars)*}
+label = {WHITE_SPACE* ~ ^"label" ~ identifier ~ ":" ~ end_of_line}
+identifier = {WHITE_SPACE* ~ (ASCII_ALPHA | ident_allowed_special_chars) ~ (ASCII_ALPHANUMERIC | ident_allowed_special_chars)*}
 ident_allowed_special_chars = {"_"}
-identifier = {label_ident ~ end_of_line}
+jump_to_label = {identifier ~ end_of_line}
+
+start_of_macros = {WHITE_SPACE* ~ "macroes:" ~ end_of_line}
+macro_def = {WHITE_SPACE* ~ ^"macro" ~ WHITE_SPACE+ ~  identifier ~ WHITE_SPACE* ~ "(" ~ macro_args ~ ")" ~ end_of_line}
+macro_args = {WHITE_SPACE* ~ (macro_arg ~ ("," ~ WHITE_SPACE* ~ macro_arg ~ WHITE_SPACE*)*) | (macro_arg?)}
+macro_arg = {"%" ~ identifier}

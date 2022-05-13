@@ -219,7 +219,6 @@ pub fn interpret(program: &[u8], mut input: Input, mut output: Output) -> Result
                     ToStore::REG0..=ToStore::REG5 => registers[to as usize] = from_target,
                     ToStore::OUT => {
                         let _ = output.write(&[from_target])?;
-                        output.flush()?;
                     }
                     ToStore::UNKNOWN => {
                         return Err(eyre!(

@@ -78,7 +78,7 @@ pub fn parse(program: &str) -> Result<SuccessfulParse> {
                         instructions.push(parsed);
                     }
                     Rule::label => (),
-                    Rule::identifier => {
+                    Rule::jump_to_label => {
                         let val = *label_positions.get(node.as_str().trim()).unwrap();
                         if val > 63 {
                             return Err(eyre!("You tried to use a label with a value greater than 63 which is not supported."));
@@ -111,7 +111,7 @@ fn find_labels(tree: Pairs<Rule>) -> LabelPositions {
                         positions.insert(as_str, number_of_instructions);
                     }
                     Rule::instruction => number_of_instructions += 1,
-                    Rule::identifier => number_of_instructions += 1,
+                    Rule::jump_to_label => number_of_instructions += 1,
                     _ => unreachable!(),
                 }
             }
