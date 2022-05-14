@@ -40,6 +40,7 @@ pub fn parse(program: &str) -> Result<SuccessfulParse> {
                         instructions.push(parsed);
                     }
                     Rule::label => (),
+                    Rule::macro_call => (),
                     Rule::jump_to_label => {
                         let val = *label_positions.get(node.as_str().trim()).unwrap();
                         if val > 63 {
@@ -74,6 +75,7 @@ fn find_labels(tree: Pairs<Rule>) -> LabelPositions {
                     }
                     Rule::instruction => number_of_instructions += 1,
                     Rule::jump_to_label => number_of_instructions += 1,
+                    Rule::macro_call => (),
                     _ => unreachable!(),
                 }
             }

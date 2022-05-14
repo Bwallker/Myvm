@@ -1,5 +1,5 @@
 macros:
-    macro my_macro(%a, %b, %c):
+    macro my_macro(%a, %b, %c): // I am a comment at the end of a macro definition
         mov %a %b
         mov %b %c
         %c
@@ -69,3 +69,5 @@ mov 3 out
 
 33
 mov 0 out
+
+my_macro (1, 2, 3)
