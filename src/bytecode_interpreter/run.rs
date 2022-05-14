@@ -140,20 +140,30 @@ impl Input<'_> {
     }
 }
 
+macro_rules! increment_pc {
+    ($pc: ident) => {{
+        let new_val = $pc.checked_add(1);
+        if new_val == None {
+            return Ok(());
+        }
+        $pc = new_val.unwrap();
+    }};
+}
+
 /// This program is an implementation of an emulator for a custom CPU architecture. It is loosely based on the OVERTURE architecture from the Turing Complete programming video game.
 pub fn interpret(program: &[u8], mut input: Input, mut output: Output) -> Result<()> {
     assert!(
         program.len() < 256,
-        "Programs cannot currently be longer 256 bytes."
+        "Programs cannot currently be longer 255 bytes."
     );
     let mut registers = [0u8; 6];
     let mut pc = 0u8;
     loop {
         // The first two bits in an instructions tells us the instructions type:
-        // 00 - arithmetic
+        // 00 - LOAD LITERAL
         // 01 - CONDITIONAL
         // 10 - MOVE
-        // 11 - load literal into register 0
+        // 11 - ARITHMETIC
         let current_instruction = match program.get(pc as usize) {
             Some(v) => *v,
             None => return Ok(()),
@@ -166,7 +176,7 @@ pub fn interpret(program: &[u8], mut input: Input, mut output: Output) -> Result
                 let reg1 = registers[1];
                 let reg2 = registers[2];
 
-                *unsafe { registers.get_unchecked_mut(3) } = match body {
+                let reg3 = match body {
                     Arithmetic::ADD => reg1.wrapping_add(reg2),
                     Arithmetic::SUB => reg1.wrapping_sub(reg2),
                     Arithmetic::AND => reg1 & reg2,
@@ -175,9 +185,10 @@ pub fn interpret(program: &[u8], mut input: Input, mut output: Output) -> Result
                     Arithmetic::NOR => !(reg1 | reg2),
                     Arithmetic::XOR => reg1 ^ reg2,
                     Arithmetic::XNOR => !(reg1 ^ reg2),
-                    _ => return Err(eyre!("Bad arithmetic instruction at instruction number {pc}. Instruction should be of the form: 0b_00_000_xxx. AKA the middle three bits should be 0 but in this case they were not. The bad instruction was {current_instruction:#010b}")),
+                    _ => return Err(eyre!("Bad arithmetic instruction at instruction number {pc}. Instruction should be of the form: 0b_00_000_xxx. IE the middle three bits should be 0 but in this case they were not. The bad instruction was {current_instruction:#010b}")),
                 };
-                pc = pc.wrapping_add(1);
+                registers[3] = reg3;
+                increment_pc!(pc);
                 continue;
             }
             InstructionType::CONDITIONAL => {
@@ -191,12 +202,12 @@ pub fn interpret(program: &[u8], mut input: Input, mut output: Output) -> Result
                     Conditional::JLEZ => reg3 <= 0,
                     Conditional::JGEZ => reg3 >= 0,
                     Conditional::JLZ => reg3 < 0,
-                    _ => return Err(eyre!("Bad conditional instruction at instruction number {pc}. Instruction should be of the form: 0b_01_000_xxx. AKA the middle three bits should be 0 but in this case they were not. The bad instruction was {current_instruction:#010b}")),
+                    _ => return Err(eyre!("Bad conditional instruction at instruction number {pc}. Instruction should be of the form: 0b_01_000_xxx. IE the middle three bits should be 0 but in this case they were not. The bad instruction was {current_instruction:#010b}")),
                 };
                 if should_jump {
                     pc = registers[0];
                 } else {
-                    pc = pc.wrapping_add(1);
+                    increment_pc!(pc);
                 }
                 continue;
             }
@@ -227,12 +238,12 @@ pub fn interpret(program: &[u8], mut input: Input, mut output: Output) -> Result
                     }
                     _ => unsafe { unreachable_unchecked() },
                 };
-                pc = pc.wrapping_add(1);
+                increment_pc!(pc);
                 continue;
             }
             InstructionType::LOAD_LITERAL => {
                 registers[0] = body;
-                pc = pc.wrapping_add(1);
+                increment_pc!(pc);
                 continue;
             }
             _ => unsafe { unreachable_unsafe!() },

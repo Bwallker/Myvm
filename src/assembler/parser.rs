@@ -279,6 +279,7 @@ mod tests {
         print_ast(s);
         let r = parse(s)?;
         println!("input: {:#?}, program: {:#?}", r.input, r.program);
+        // Panic to see print output.
         panic!()
     }
 }
