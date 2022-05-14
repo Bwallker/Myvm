@@ -1,3 +1,12 @@
+macros:
+    macro my_macro(%a, %b, %c):
+        mov %a %b
+        mov %b %c
+        %c
+        %b
+    end_macro:
+
+
 program:
 63
 mov 0 1

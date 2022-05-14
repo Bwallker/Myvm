@@ -1,18 +1,14 @@
-use color_eyre::Result;
-use pest::iterators::{Pair, Pairs};
-use pest::Parser;
-use pest_derive::Parser;
 use std::collections::HashMap;
 
+use color_eyre::Result;
+use pest::iterators::{Pair, Pairs};
+
+use crate::assembler::lexer::{lex, Rule};
 use crate::bytecode_interpreter::run::{
     Arithmetic, Conditional, FromStore, ToStore, ARITHMETIC_PREFIX, CONDITIONAL_PREFIX,
     LITERAL_PREFIX, MOVE_PREFIX,
 };
 use crate::eyre;
-
-#[derive(Parser)]
-#[grammar = "./assembler/grammar.pest"] // relative to src
-struct Grammar;
 
 #[derive(Debug)]
 pub struct SuccessfulParse {
@@ -27,48 +23,14 @@ impl SuccessfulParse {
 }
 
 pub fn parse(program: &str) -> Result<SuccessfulParse> {
-    let pairs: Pairs<Rule> = Grammar::parse(Rule::program, program).unwrap();
-    let program = pairs.into_iter().next().unwrap();
-    let mut input: Vec<u8> = Vec::new();
+    let file: Pair<Rule> = lex(program)?;
     let mut instructions = Vec::new();
-    let mut inside = program.into_inner();
-    if inside.peek().unwrap().as_rule() == Rule::input {
-        inside.next();
-        loop {
-            let next = inside.peek().unwrap();
-            if next.as_rule() != Rule::input_byte {
-                break;
-            }
-            inside.next();
-            let inner = next.into_inner().next().unwrap();
-            input.push(match inner.as_rule() {
-                Rule::char_input => {
-                    let as_str = inner.as_str().trim();
-                    let l = as_str.len();
-                    let char = &as_str[1..l].chars().next().unwrap();
-                    *char as u32 as u8
-                }
-                Rule::dec_input => {
-                    let as_str = inner.as_str().trim();
-                    as_str.parse::<u8>().unwrap()
-                }
-                Rule::bin_input => {
-                    let as_str = inner.as_str().trim();
-                    let without_prefix = &as_str[2..];
-                    u8::from_str_radix(without_prefix, 2).unwrap()
-                }
-                Rule::hex_input => {
-                    let as_str = inner.as_str().trim();
-                    let without_prefix = &as_str[2..];
-                    u8::from_str_radix(without_prefix, 16).unwrap()
-                }
-                _ => unreachable!(),
-            })
-        }
-    }
-    assert_eq!(inside.next().unwrap().as_rule(), Rule::start_of_program);
-    let label_positions = find_labels(inside.clone());
-    for node in inside {
+    let tree = file.into_inner();
+    let (macros, tree) = parse_macros(tree);
+    let (input, mut tree) = parse_input(tree);
+    let program = tree.next().unwrap().into_inner();
+    let label_positions = find_labels(program.clone());
+    for node in program {
         match node.as_rule() {
             Rule::action => {
                 let node = node.into_inner().next().unwrap();
@@ -116,10 +78,77 @@ fn find_labels(tree: Pairs<Rule>) -> LabelPositions {
                 }
             }
             Rule::EOI => (),
-            _ => unreachable!(),
+            _ => {
+                println!("{:?}", node.as_rule());
+                println!("BAD NODE!");
+                unreachable!()
+            }
         }
     }
     positions
+}
+
+fn parse_input(mut tree: Pairs<Rule>) -> (Vec<u8>, Pairs<Rule>) {
+    let mut input = Vec::new();
+    if tree.peek().unwrap().as_rule() == Rule::inputs {
+        let mut inputs = tree.next().unwrap().into_inner();
+        loop {
+            let next = inputs.next();
+            if next == None {
+                break;
+            }
+            let next = next.unwrap();
+            if next.as_rule() != Rule::input_byte {
+                break;
+            }
+            let inner = next.into_inner().next().unwrap();
+            input.push(match inner.as_rule() {
+                Rule::char_input => {
+                    let as_str = inner.as_str().trim();
+                    let l = as_str.len();
+                    let char = &as_str[1..l].chars().next().unwrap();
+                    *char as u32 as u8
+                }
+                Rule::dec_input => {
+                    let as_str = inner.as_str().trim();
+                    as_str.parse::<u8>().unwrap()
+                }
+                Rule::bin_input => {
+                    let as_str = inner.as_str().trim();
+                    let without_prefix = &as_str[2..];
+                    u8::from_str_radix(without_prefix, 2).unwrap()
+                }
+                Rule::hex_input => {
+                    let as_str = inner.as_str().trim();
+                    let without_prefix = &as_str[2..];
+                    u8::from_str_radix(without_prefix, 16).unwrap()
+                }
+                _ => unreachable!(),
+            })
+        }
+    };
+    (input, tree)
+}
+
+type Macros<'a> = HashMap<&'a str, Pair<'a, Rule>>;
+fn parse_macros(mut tree: Pairs<Rule>) -> (Macros, Pairs<Rule>) {
+    let mut macros = HashMap::new();
+    if tree.peek().unwrap().as_rule() == Rule::macros {
+        let mut macro_tokens = tree.next().unwrap().into_inner();
+        loop {
+            let next = macro_tokens.next();
+            if next == None {
+                break;
+            }
+            let next = next.unwrap();
+            if next.as_rule() != Rule::macro_def {
+                break;
+            }
+            let ident = next.clone().into_inner().next().unwrap().as_str().trim();
+            macros.insert(ident, next);
+        }
+    };
+    (macros, tree)
 }
 
 fn parse_instruction(instruction: Pair<Rule>) -> u8 {
@@ -202,14 +231,18 @@ fn parse_instruction(instruction: Pair<Rule>) -> u8 {
 // nand = {WHITE_SPACE* ~ ^"nand" ~ end_of_line}
 #[cfg(test)]
 mod tests {
+    use pest::iterators::Pair;
+
+    use crate::assembler::lexer::lex;
     use crate::assembler::parser::parse;
     use crate::Result;
 
-    use super::{Grammar, Pairs, Parser, Rule};
+    use super::Rule;
 
-    fn print_ast(program: &str) {
-        let pairs: Pairs<Rule> = Grammar::parse(Rule::program, program).unwrap();
-        println!("{:#?}", pairs.into_iter());
+    fn print_ast(program: &str) -> Result<()> {
+        let file: Pair<Rule> = lex(program)?;
+        println!("{:#?}", file.into_inner());
+        Ok(())
     }
 
     #[test]
