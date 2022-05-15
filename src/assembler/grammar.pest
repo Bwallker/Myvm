@@ -12,7 +12,7 @@ bin_prefix = {^"0b"}
 trailing_zeroes = _{"0"*}
 
 inputs = {( input ~ input_byte+ )?}
-input = _{WHITE_SPACE* ~ ^"input" ~ end_of_line}
+input = _{WHITE_SPACE* ~ ^"input:" ~ end_of_line}
 input_byte = ${WHITE_SPACE* ~ (
     char_input
   | bin_input
