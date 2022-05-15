@@ -9,7 +9,11 @@ input:
 '8'
 
 program:
+    macro recurse_baby():
+        recurse_baby()
+    end_macro:
     loop
     label loop:
         mov i o
         j
+    recurse_baby()

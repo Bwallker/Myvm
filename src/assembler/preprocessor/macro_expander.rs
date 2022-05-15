@@ -6,6 +6,8 @@ use crate::assembler::lexer::Rule;
 use crate::eyre;
 use aho_corasick::{AhoCorasickBuilder, MatchKind};
 
+const MAX_DEPTH: u32 = 10;
+
 fn expand_macros_recurse(input: &str, expanded: &mut String) -> Option<Result<()>> {
 	expanded.clear();
 	let file = lex(&input);
@@ -41,20 +43,28 @@ fn expand_macros_recurse(input: &str, expanded: &mut String) -> Option<Result<()
 						let mut macro_def = macro_def.unwrap().clone().into_inner();
 						let macro_args = macro_def.next().unwrap().into_inner().nth(1).unwrap().into_inner();
 						let args = contents.next().unwrap().into_inner();
-						let expected_number_of_arguments = macro_args.clone().count();
-						let provided_number_of_arguments = args.clone().count();
+						let expected_number_of_arguments = macro_args.clone().filter(|x| !x.as_str().trim().is_empty()).count();
+						let provided_number_of_arguments = args.clone().filter(|x| !x.as_str().trim().is_empty()).count();
 						if expected_number_of_arguments != provided_number_of_arguments {
 							return Some(Err(eyre!("Macro {ident} expects {expected_number_of_arguments} arguments but received {provided_number_of_arguments}")));
 						}
+
 						let macro_body = macro_def.next().unwrap().as_str();
-						let pats: Vec<&str> = macro_args.map(|marg| marg.as_str()).collect();
-						let reps: Vec<&str> = args.map(|arg| arg.as_str()).collect();
-						let ac = AhoCorasickBuilder::new()
-							.match_kind(MatchKind::LeftmostFirst)
-							.auto_configure(&pats)
-							.build(&pats);
-						let macro_body = ac.replace_all(macro_body, &reps);
-						expanded.push_str(macro_body.as_str());
+
+						if expected_number_of_arguments != 0 {
+							let pats: Vec<&str> = macro_args.map(|marg| marg.as_str()).collect();
+							let reps: Vec<&str> = args.map(|arg| arg.as_str()).collect();
+							let ac = AhoCorasickBuilder::new()
+								.match_kind(MatchKind::LeftmostFirst)
+								.auto_configure(&pats)
+								.build(&pats);
+							let macro_body = ac.replace_all(macro_body, &reps);
+							expanded.push_str(macro_body.as_str());
+
+						} else {
+							expanded.push_str(macro_body);
+						};
+
 						number_of_macro_calls_or_constants += 1;
 					},
 					Rule::use_label_or_const => {
@@ -84,7 +94,10 @@ fn expand_macros_recurse(input: &str, expanded: &mut String) -> Option<Result<()
 pub fn expand_macros(mut input: &str) -> Result<String> {
 	let mut expanded = String::with_capacity((input.len() * 3) / 2);
 	let mut input_s = String::new();
-	loop {
+	for i in 0u32.. {
+		if i == MAX_DEPTH {
+			return Err(eyre!("Max recursion expansion limit reached! Having more than {MAX_DEPTH} nested macros is not allowed."));
+		}
 		let round = expand_macros_recurse(input, &mut expanded);
 		if let None = round{
 			return Ok(expanded);
@@ -100,6 +113,7 @@ pub fn expand_macros(mut input: &str) -> Result<String> {
 		let p = unsafe {std::slice::from_raw_parts(i.as_bytes().as_ptr(), i.as_bytes().len())};
 		input = unsafe {std::str::from_utf8_unchecked(p)};
 	}
+	unreachable!()
 }
 type Macros<'a> = HashMap<&'a str, Pair<'a, Rule>>;
 type Constants<'a> = HashMap<&'a str, Pair<'a, Rule>>;

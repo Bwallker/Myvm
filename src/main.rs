@@ -79,14 +79,14 @@ struct Assemble {
         value_name = "GENERATED_PROGRAM_FILE"
     )]
     generated_program_path: PathBuf,
-    /// The path to the file into which the generated program input should go.
+    /// The path to the file into which the generated program input should go. If no input path is specified, then the generated input will be ignored.
     #[clap(
         short = 'i',
         long,
         parse(from_os_str),
         value_name = "GENERATED_INPUT_FILE"
     )]
-    generated_input_path: PathBuf,
+    generated_input_path: Option<PathBuf>,
 }
 
 fn main() -> Result<()> {
@@ -115,8 +115,10 @@ fn assemble(args: Assemble) -> Result<()> {
     let (input, program) = (ast.input, ast.program);
     let mut program_file = File::create(args.generated_program_path)?;
     program_file.write_all(&program)?;
-    let mut input_file = File::create(args.generated_input_path)?;
-    input_file.write_all(&input)?;
+    if let Some(input_path) = args.generated_input_path {
+        let mut input_file = File::create(input_path)?;
+        input_file.write_all(&input)?;
+    }
     Ok(())
 }
 
