@@ -6,9 +6,21 @@ use crate::assembler::lexer::Rule;
 use crate::eyre;
 use aho_corasick::{AhoCorasickBuilder, MatchKind};
 
+const MAX_DEPTH: u32 = 100;
+
 pub fn expand_macros(input: &str) -> Result<String> {
-	let file = lex(input)?;
-	let mut expanded = String::new();
+	let mut input_s = String::with_capacity((input.len() * 3) / 2);
+	input_s.push_str(input);
+	expand_macro_recurse(input_s, String::with_capacity(input.len() * 2), 0)
+
+}
+
+fn expand_macro_recurse(input: String, mut expanded: String, depth: u32) -> Result<String> {
+	if depth > MAX_DEPTH {
+		return Err(eyre!("Max depth on recursive macro expansion exceeded!"));
+	}
+	expanded.clear();
+	let file = lex(&input)?;
 	let mut tree = file.into_inner();
 	let inputs = tree.next().unwrap();
 	assert_eq!(inputs.as_rule(), Rule::inputs);
@@ -21,6 +33,7 @@ pub fn expand_macros(input: &str) -> Result<String> {
 	assert_eq!(start_of_program.as_rule(), Rule::start_of_program);
 	expanded.push_str(start_of_program.as_str());
 	let macros = parse_macros(actions.clone());
+	let mut number_of_macro_calls = 0u32;
 	for action in actions {
 		match action.as_rule() {
 			Rule::action => {
@@ -50,8 +63,8 @@ pub fn expand_macros(input: &str) -> Result<String> {
 							.build(&pats);
 						let macro_body = ac.replace_all(macro_body, &reps);
 						expanded.push_str(macro_body.as_str());
+						number_of_macro_calls += 1;
 					},
-					Rule::full_macro => (),
 					_ => expanded.push_str(node.as_str()),
 				}
 			}
@@ -59,10 +72,11 @@ pub fn expand_macros(input: &str) -> Result<String> {
 			_ => unreachable!(),
 		}
 	}
-	Ok(expanded)
-
+	if number_of_macro_calls == 0 {
+		return Ok(expanded);
+	}
+	expand_macro_recurse(expanded, input, depth + 1)
 }
-
 type Macros<'a> = HashMap<&'a str, Pair<'a, Rule>>;
 fn parse_macros(actions: Pairs<Rule>) -> Macros {
 	let mut macros = HashMap::new();
