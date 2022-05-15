@@ -49,8 +49,6 @@ pub fn expand_macros(input: &str) -> Result<String> {
 							.auto_configure(&pats)
 							.build(&pats);
 						let macro_body = ac.replace_all(macro_body, &reps);
-						println!("To Replace: {:#?}", macro_body);
-
 						expanded.push_str(macro_body.as_str());
 					},
 					Rule::full_macro => (),
@@ -61,7 +59,6 @@ pub fn expand_macros(input: &str) -> Result<String> {
 			_ => unreachable!(),
 		}
 	}
-	println!("Expanded: {expanded:#?}");
 	Ok(expanded)
 
 }
