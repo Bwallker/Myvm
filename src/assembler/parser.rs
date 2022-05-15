@@ -9,7 +9,7 @@ use crate::bytecode_interpreter::run::{
     LITERAL_PREFIX, MOVE_PREFIX,
 };
 use crate::eyre;
-
+use super::preprocessor::preprocess;
 #[derive(Debug)]
 pub struct SuccessfulParse {
     pub(crate) input: Vec<u8>,
@@ -23,14 +23,16 @@ impl SuccessfulParse {
 }
 
 pub fn parse(program: &str) -> Result<SuccessfulParse> {
-    let file: Pair<Rule> = lex(program)?;
+    let program = preprocess(program)?;
+    let file: Pair<Rule> = lex(&program)?;
     let mut instructions = Vec::new();
     let tree = file.into_inner();
-    let (macros, tree) = parse_macros(tree);
     let (input, mut tree) = parse_input(tree);
-    let program = tree.next().unwrap().into_inner();
-    let label_positions = find_labels(program.clone());
-    for node in program {
+    let mut actions = tree.next().unwrap().into_inner();
+    let start_of_program = actions.next().unwrap();
+    assert_eq!(start_of_program.as_rule(), Rule::start_of_program);
+    let label_positions = find_labels(actions.clone());
+    for node in actions {
         match node.as_rule() {
             Rule::action => {
                 let node = node.into_inner().next().unwrap();
@@ -41,6 +43,8 @@ pub fn parse(program: &str) -> Result<SuccessfulParse> {
                     }
                     Rule::label => (),
                     Rule::macro_call => (),
+                    Rule::full_macro => (),
+                    Rule::empty => (),
                     Rule::jump_to_label => {
                         let val = *label_positions.get(node.as_str().trim()).unwrap();
                         if val > 63 {
@@ -76,6 +80,8 @@ fn find_labels(tree: Pairs<Rule>) -> LabelPositions {
                     Rule::instruction => number_of_instructions += 1,
                     Rule::jump_to_label => number_of_instructions += 1,
                     Rule::macro_call => (),
+                    Rule::full_macro => (),
+                    Rule::empty => (),
                     _ => unreachable!(),
                 }
             }
@@ -130,27 +136,6 @@ fn parse_input(mut tree: Pairs<Rule>) -> (Vec<u8>, Pairs<Rule>) {
         }
     };
     (input, tree)
-}
-
-type Macros<'a> = HashMap<&'a str, Pair<'a, Rule>>;
-fn parse_macros(mut tree: Pairs<Rule>) -> (Macros, Pairs<Rule>) {
-    let mut macros = HashMap::new();
-    if tree.peek().unwrap().as_rule() == Rule::macros {
-        let mut macro_tokens = tree.next().unwrap().into_inner();
-        loop {
-            let next = macro_tokens.next();
-            if next == None {
-                break;
-            }
-            let next = next.unwrap();
-            if next.as_rule() != Rule::macro_def {
-                break;
-            }
-            let ident = next.clone().into_inner().next().unwrap().as_str().trim();
-            macros.insert(ident, next);
-        }
-    };
-    (macros, tree)
 }
 
 fn parse_instruction(instruction: Pair<Rule>) -> u8 {

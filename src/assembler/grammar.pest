@@ -3,7 +3,7 @@
 WHITESPACE = _{" " | "\t"}
 COMMENT = _{WHITE_SPACE* ~ (("/*" ~ (!("*/") ~ ANY)* ~ "*/") | ("//" ~ (!(NEWLINE) ~ ANY)* ~ &NEWLINE))}
 
-file = {SOI ~ WHITE_SPACE* ~ macros ~ inputs ~ program ~ WHITE_SPACE* ~ EOI}
+file = {SOI ~ WHITE_SPACE* ~ inputs ~ program ~ WHITE_SPACE* ~ EOI}
 program = {start_of_program ~ action+}
 end_of_line = _{&end_of_line_impl}
 end_of_line_impl = ${COMMENT? ~ (NEWLINE | EOI)}
@@ -30,7 +30,7 @@ dec_input = {(trailing_zeroes ~ ('0'..'1')? ~ ASCII_DIGIT{,2})
 
 
 
-start_of_program = _{WHITE_SPACE* ~ ^"program:" ~ end_of_line}
+start_of_program = {WHITE_SPACE* ~ ^"program:" ~ end_of_line}
 nop = {WHITE_SPACE* ~ ^"nop" ~ end_of_line}
 j = {WHITE_SPACE* ~ ^"j" ~ end_of_line}
 jez = {WHITE_SPACE* ~ ^"jez" ~ end_of_line}
@@ -60,15 +60,13 @@ output_reg = {^"output" | ^"out" | ^"o"}
 
 
 instruction = ${nop | j | jez | jnz | jgez |jgz | jlez | jlz | literal | add | sub | or | nor | xor | xnor | and | nand | mov}
-empty = _{COMMENT? ~ (WHITE_SPACE | NEWLINE)+}
-action = {macro_call | instruction | label | jump_to_label | empty}
+empty = {COMMENT? ~ (WHITE_SPACE | NEWLINE)+}
+action = {macro_call | full_macro | instruction | label | jump_to_label | empty}
 
 label = {WHITE_SPACE* ~ ^"label" ~ identifier ~ ":" ~ end_of_line}
 identifier = ${WHITE_SPACE* ~ (ASCII_ALPHA | ident_allowed_special_chars) ~ (ASCII_ALPHANUMERIC | ident_allowed_special_chars)*}
 ident_allowed_special_chars = {"_"}
 jump_to_label = {WHITE_SPACE* ~ identifier ~ end_of_line}
-macros = {(start_of_macros ~ full_macro+)?}
-start_of_macros = _{WHITE_SPACE* ~ "macros:" ~ end_of_line}
 full_macro = {macro_def ~ macro_body ~ end_of_macro}
 macro_body = {(!(end_of_macro) ~ ANY)*}
 end_of_macro = {WHITE_SPACE* ~ "end_macro:" ~ end_of_line}

@@ -1,13 +1,13 @@
-macros:
-    macro my_macro(%a, %b, %c): // I am a comment at the end of a macro definition
-        mov %a %b
-        mov %b %c
-        %c
-        %b
-    end_macro:
+
 
 
 program:
+
+macro output_literal(%literal): // I am a comment at the end of a macro definition
+    %literal
+    mov 0 out
+end_macro:
+
 63
 mov 0 1
 9
@@ -67,7 +67,5 @@ mov 0 2
 sub
 mov 3 out
 
-33
-mov 0 out
-
-my_macro (1, 2, 3)
+output_literal(33)
+output_literal(33)
