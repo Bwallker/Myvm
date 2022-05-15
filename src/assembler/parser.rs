@@ -45,7 +45,8 @@ pub fn parse(program: &str) -> Result<SuccessfulParse> {
                     Rule::macro_call => (),
                     Rule::full_macro => (),
                     Rule::empty => (),
-                    Rule::jump_to_label => {
+                    Rule::constant => (),
+                    Rule::use_label_or_const => {
                         let val = *label_positions.get(node.as_str().trim()).unwrap();
                         if val > 63 {
                             return Err(eyre!("You tried to use a label with a value greater than 63 which is not supported."));
@@ -78,10 +79,11 @@ fn find_labels(tree: Pairs<Rule>) -> LabelPositions {
                         positions.insert(as_str, number_of_instructions);
                     }
                     Rule::instruction => number_of_instructions += 1,
-                    Rule::jump_to_label => number_of_instructions += 1,
+                    Rule::use_label_or_const => number_of_instructions += 1,
                     Rule::macro_call => (),
                     Rule::full_macro => (),
                     Rule::empty => (),
+                    Rule::constant => (),
                     _ => unreachable!(),
                 }
             }
@@ -263,7 +265,7 @@ mod tests {
             loop
             j
             "#;
-        print_ast(s);
+        print_ast(s)?;
         let r = parse(s)?;
         println!("input: {:#?}, program: {:#?}", r.input, r.program);
         // Panic to see print output.

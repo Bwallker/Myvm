@@ -50,4 +50,5 @@ print_negative_offset(6)
 // D
 print_negative_offset(8)
 // !
-output_literal(33)
+exclamation_mark = 33
+output_literal(exclamation_mark)

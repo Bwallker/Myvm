@@ -61,12 +61,12 @@ output_reg = {^"output" | ^"out" | ^"o"}
 
 instruction = ${nop | j | jez | jnz | jgez |jgz | jlez | jlz | literal | add | sub | or | nor | xor | xnor | and | nand | mov}
 empty = {COMMENT? ~ (WHITE_SPACE | NEWLINE)+}
-action = {macro_call | full_macro | instruction | label | jump_to_label | empty}
+action = {constant | macro_call | full_macro | instruction | label | use_label_or_const | empty}
 
 label = {WHITE_SPACE* ~ ^"label" ~ identifier ~ ":" ~ end_of_line}
 identifier = ${WHITE_SPACE* ~ (ASCII_ALPHA | ident_allowed_special_chars) ~ (ASCII_ALPHANUMERIC | ident_allowed_special_chars)*}
 ident_allowed_special_chars = {"_"}
-jump_to_label = {WHITE_SPACE* ~ identifier ~ end_of_line}
+use_label_or_const = {WHITE_SPACE* ~ identifier ~ end_of_line}
 full_macro = {macro_def ~ macro_body ~ end_of_macro}
 macro_body = {(!(end_of_macro) ~ ANY)*}
 end_of_macro = {WHITE_SPACE* ~ "end_macro:" ~ end_of_line}
@@ -77,3 +77,6 @@ macro_arg = ${"%" ~ identifier}
 arg = {(!("," | ")") ~ ANY)*}
 args = {WHITE_SPACE* ~ (arg ~ ("," ~ WHITE_SPACE* ~ arg ~ WHITE_SPACE*)*)?}
 macro_call = ${WHITE_SPACE* ~  identifier ~ WHITE_SPACE* ~ "(" ~ args ~ ")" ~ end_of_line}
+
+constant = ${WHITESPACE* ~ identifier ~ WHITESPACE* ~ "=" ~ WHITESPACE* ~ const_val}
+const_val = {(literal | identifier) ~ end_of_line ~ (NEWLINE | EOI)}
