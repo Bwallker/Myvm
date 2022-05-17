@@ -1,0 +1,13 @@
+{
+  "extends": "./options.tsconfig.json",
+  "include": [
+    "setup/**/*"
+  ],
+  "compilerOptions": {
+    "isolatedModules": false,
+    "module": "ES2020",
+    "outDir": "setupOut",
+    "target": "ES2022",
+    "noEmit": false
+  }
+}

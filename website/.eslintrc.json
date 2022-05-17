@@ -1,0 +1,77 @@
+{
+  "env": {
+    "browser": true,
+    "es2021": true
+  },
+  "extends": [
+    "eslint:recommended",
+    "plugin:react/recommended",
+    "plugin:@typescript-eslint/recommended",
+    "next/core-web-vitals"
+  ],
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "ecmaFeatures": {
+      "jsx": true
+    },
+    "ecmaVersion": "latest",
+    "sourceType": "module"
+  },
+  "plugins": [
+    "react",
+    "@typescript-eslint",
+    "prettier"
+  ],
+  "rules": {
+    "no-template-curly-in-string": "error",
+    "no-unmodified-loop-condition": "error",
+    "no-alert": "error",
+    "no-var": "error",
+    "no-case-declarations": "error",
+    "no-duplicate-case": "error",
+    "no-duplicate-imports": "error",
+    "no-dupe-args": "error",
+    "no-dupe-class-members": "error",
+    "no-dupe-keys": "error",
+    "no-empty": "off",
+    "no-empty-character-class": "error",
+    "no-empty-function": "error",
+    "no-empty-pattern": "error",
+    "no-multiple-empty-lines": "error",
+    "eqeqeq": [
+      "error",
+      "always",
+      {
+        "null": "always"
+      }
+    ],
+    "no-constant-condition": [
+      "error",
+      {
+        "checkLoops": false
+      }
+    ],
+    "no-lonely-if": "error",
+    "wrap-iife": [
+      "error",
+      "inside"
+    ],
+    "curly": [
+      "error",
+      "multi-line",
+      "consistent"
+    ],
+    "arrow-body-style": [
+      "error",
+      "as-needed"
+    ],
+    "@typescript-eslint/no-non-null-assertion": "off",
+    "@typescript-eslint/ban-ts-comment": "off",
+    "@typescript-eslint/semi": [
+      "error",
+      "always"
+    ],
+    "semi": "off",
+    "prettier/prettier": "error"
+  }
+}
