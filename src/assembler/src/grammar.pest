@@ -20,7 +20,7 @@ input_byte = ${WHITE_SPACE* ~ (
   | dec_input
   ) ~ end_of_line
 }
-char_input = {"'" ~ ASCII ~ "'"}
+char_input = {("'" ~ ASCII ~ "'") | "'\n'" | "'\t'" | "'\0'" | "'\r'"}
 hex_input = {hex_prefix ~ trailing_zeroes ~  ASCII_HEX_DIGIT{,2}}
 bin_input = {bin_prefix ~ trailing_zeroes ~ ASCII_BIN_DIGIT{,8}}
 dec_input = {(trailing_zeroes ~ ('0'..'1')? ~ ASCII_DIGIT{,2})
