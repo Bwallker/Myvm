@@ -1,7 +1,7 @@
 {
   "scripts": {
-    "build": "export NODE_OPTIONS=--openssl-legacy-provider && webpack",
-    "serve": "export NODE_OPTIONS=--openssl-legacy-provider && webpack-dev-server"
+    "build": "webpack && cp -r ./pkg ../../website/",
+    "serve": "webpack-dev-server"
   },
   "devDependencies": {
     "@wasm-tool/wasm-pack-plugin": "1.0.1",

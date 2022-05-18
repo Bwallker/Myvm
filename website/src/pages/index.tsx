@@ -1,7 +1,7 @@
 import type { NextPage } from 'next';
 import MyvmEditor from './MyvmEditor';
 import { useState } from 'react';
-import Parse from '../util/parse';
+import Parse from '../util/Parse';
 import Hello_world from '../../myvm_examples/hello_world';
 
 const HelloWorld = Hello_world;

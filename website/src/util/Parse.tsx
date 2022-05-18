@@ -57,7 +57,7 @@ const ParseInput = (props: { input: ParseResult }): JSX.Element => {
 	}
 };
 
-const RustComponent = dynamic({
+const Parse = dynamic({
 	loader: async () => {
 		// Import the wasm module
 		const rustModule = await import('../../pkg/index');
@@ -85,4 +85,4 @@ const RustComponent = dynamic({
 	ssr: false,
 });
 
-export default RustComponent;
+export default Parse;
