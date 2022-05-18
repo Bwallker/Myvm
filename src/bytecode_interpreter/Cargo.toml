@@ -1,0 +1,8 @@
+[package]
+name = "bytecode_interpreter"
+version = "0.1.0"
+edition = "2021"
+authors = ["Bwallker <bwallker.com>"]
+
+[dependencies]
+color-eyre = "0.6.1"

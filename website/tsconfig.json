@@ -10,9 +10,12 @@
   "include": [
     "next-env.d.ts",
     "**/*.ts",
-    "**/*.tsx"
+    "**/*.tsx",
+    "**/*.cts",
+    "**/*.ctsx"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "src/wasm/**/*"
   ]
 }

@@ -1,24 +1,35 @@
 use std::collections::HashMap;
 
-use color_eyre::Result;
-use pest::iterators::{Pair, Pairs};
-
-use crate::assembler::lexer::{lex, Rule};
-use crate::bytecode_interpreter::run::{
+use bytecode_interpreter::run::{
     Arithmetic, Conditional, FromStore, ToStore, ARITHMETIC_PREFIX, CONDITIONAL_PREFIX,
     LITERAL_PREFIX, MOVE_PREFIX,
 };
-use crate::eyre;
-use super::preprocessor::preprocess;
+use color_eyre::eyre::eyre;
+use color_eyre::Result;
+use pest::iterators::{Pair, Pairs};
+
+use crate::lexer::lex;
+use crate::lexer::Rule;
+use crate::preprocessor::preprocess;
+
 #[derive(Debug)]
 pub struct SuccessfulParse {
     pub(crate) input: Vec<u8>,
     pub(crate) program: Vec<u8>,
+    pub(crate) expanded: String,
 }
 
 impl SuccessfulParse {
-    fn from(input: Vec<u8>, program: Vec<u8>) -> Self {
-        Self { input, program }
+    pub fn from(input: Vec<u8>, program: Vec<u8>, expanded: String) -> Self {
+        Self {
+            input,
+            program,
+            expanded,
+        }
+    }
+    #[allow(dead_code)]
+    pub fn into_raw_parts(self) -> (Vec<u8>, Vec<u8>, String) {
+        (self.input, self.program, self.expanded)
     }
 }
 
@@ -60,7 +71,7 @@ pub fn parse(program: &str) -> Result<SuccessfulParse> {
             _ => unreachable!(),
         }
     }
-    Ok(SuccessfulParse::from(input, instructions))
+    Ok(SuccessfulParse::from(input, instructions, program))
 }
 
 type LabelPositions<'a> = HashMap<&'a str, u8>;
@@ -220,11 +231,13 @@ fn parse_instruction(instruction: Pair<Rule>) -> u8 {
 // nand = {WHITE_SPACE* ~ ^"nand" ~ end_of_line}
 #[cfg(test)]
 mod tests {
+    use color_eyre::Result;
     use pest::iterators::Pair;
 
     use crate::assembler::lexer::lex;
     use crate::assembler::parser::parse;
-    use crate::Result;
+    use crate::lexer::lex;
+    use crate::parser::parse;
 
     use super::Rule;
 

@@ -12,10 +12,6 @@ use color_eyre::eyre::{eyre, Result};
 use assembler::parser::parse;
 use bytecode_interpreter::run::{interpret, Input, Output};
 
-mod bytecode_interpreter;
-
-mod assembler;
-
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
 struct Cli {
@@ -112,7 +108,7 @@ fn run(args: Run) -> Result<()> {
 fn assemble(args: Assemble) -> Result<()> {
     let source = handle_source(args.source_path)?;
     let ast = parse(&source)?;
-    let (input, program) = (ast.input, ast.program);
+    let (input, program, _) = ast.into_raw_parts();
     let mut program_file = File::create(args.generated_program_path)?;
     program_file.write_all(&program)?;
     if let Some(input_path) = args.generated_input_path {
@@ -125,7 +121,8 @@ fn assemble(args: Assemble) -> Result<()> {
 fn assemble_and_run(args: AssembleAndRun) -> Result<()> {
     let source = handle_source(args.source_path)?;
     let ast = parse(&source)?;
-    let (input_vec, program_vec) = (ast.input, ast.program);
+    let (input_vec, program_vec, _) = ast.into_raw_parts();
+
     let input = if args.use_stdin {
         Input::STDIN(stdin())
     } else {

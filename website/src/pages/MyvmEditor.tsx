@@ -1,7 +1,14 @@
-import { loader } from '@monaco-editor/react';
-import { useEffect } from 'react';
+import Editor, { loader, OnChange } from '@monaco-editor/react';
+import { CSSProperties, useEffect } from 'react';
+import useWindowDimensions from '../util/useWindowDimensions';
 
-const MyvmEditor = () => {
+interface Props {
+	className?: string;
+	style?: CSSProperties;
+	onChange?: OnChange;
+}
+
+const MyvmEditor = (props: Props) => {
 	useEffect(() => {
 		loader.init().then((monaco) => {
 			monaco.languages.register({ id: 'myvm' });
@@ -91,20 +98,32 @@ const MyvmEditor = () => {
 					blockComment: ['/*', '*/'],
 				},
 			});
+
 			console.log('Finished setting up myvm lang');
-			monaco.editor.create(document.getElementById('monaco-root')!, {
+		});
+
+		return () => void 0;
+	});
+	const window = useWindowDimensions();
+	return (
+		<Editor
+			options={{
 				minimap: { enabled: false },
 				value: 'program:\nadd\nsub\nnop\n0x111\n0b111\n111',
 				language: 'myvm',
 				theme: 'myvm-theme',
 				scrollBeyondLastLine: false,
 				renderFinalNewline: false,
-			});
-		});
-
-		return () => void 0;
-	});
-	return <div id='monaco-root' style={{ width: '100vw', height: '100vh' }} />;
+			}}
+			language={'myvm'}
+			theme={'myvm-theme'}
+			width={window.width / 2}
+			height={window.height}
+			className={props.className}
+			onChange={props.onChange}
+			value={'program:\nadd\nsub\nnop\n0x111\n0b111\n111'}
+		/>
+	);
 };
 
 export default MyvmEditor;
