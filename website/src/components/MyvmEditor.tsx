@@ -51,6 +51,14 @@ const MyvmEditor = (props: Props) => {
 						[/\s*[jJ][lL][zZ][\t\r ]*((\/\/)|(\/\*)|\n|$)/, 'jlz'],
 
 						[/\s*[mM][oO][vV][\t ]+/, 'mov'],
+						[
+							/\s*([oO][uU][tT][pP][uU][tT](\s|\n|\r|$)+|[oO][uU][tT](\s|\n|\r|$)+|[oO](\s|\n|\r|$)+)/,
+							'out',
+						],
+						[
+							/\s*([iI][nN][pP][uU][tT](\s|\n|\r|$)+|[iI][nN](\s|\n|\r|$)+|[iI](\s|\n|\r|$)+)/,
+							'in',
+						],
 
 						[/\s*[a-zA-Z]\w*/, 'ident'],
 						[
@@ -67,6 +75,7 @@ const MyvmEditor = (props: Props) => {
 			const conditionalStyling = { foreground: '00a0a0', fontStyle: 'bold' };
 			const arithmeticStyling = { foreground: 'a000a0', fontStyle: 'bold' };
 			const commentStyling = { foreground: '666666', fontStyle: 'bold' };
+			const ioStyling = { foreground: 'FF00FF', fontStyle: 'bold' };
 			monaco.editor.defineTheme('myvm-theme', {
 				base: 'vs-dark',
 				inherit: false,
@@ -103,6 +112,9 @@ const MyvmEditor = (props: Props) => {
 
 					{ token: 'blockComment', ...commentStyling },
 					{ token: 'lineComment', ...commentStyling },
+
+					{ token: 'in', ...ioStyling },
+					{ token: 'out', ...ioStyling },
 				],
 				colors: { 'editor.foreground': '#ffffff' },
 			});
