@@ -89,7 +89,7 @@ const MyvmEditor = (props: Props) => {
 					{ token: 'binLiteral', ...literalStyling },
 					{ token: 'decLiteral', ...literalStyling },
 					{ token: 'charLiteral', foreground: 'aa6600', fontStyle: 'bold' },
-					{ token: 'mov', ...literalStyling },
+					{ token: 'mov', foreground: '994C00', fontStyle: 'bold' },
 					{ token: 'ident', foreground: '0000dd' },
 					{ token: 'j', ...conditionalStyling },
 					{ token: 'jez', ...conditionalStyling },
