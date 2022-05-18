@@ -1,6 +1,7 @@
 import Editor, { loader, OnChange } from '@monaco-editor/react';
 import { CSSProperties, useEffect } from 'react';
 import useWindowDimensions from '../util/useWindowDimensions';
+import HelloWorld from '../../myvm_examples/hello_world';
 
 interface Props {
 	className?: string;
@@ -23,10 +24,7 @@ const MyvmEditor = (props: Props) => {
 							/\s*[pP][rR][oO][gG][rR][aA][mM]:[\t\r ]*((\/\/)|(\/\*)|\n|$)/,
 							'program',
 						],
-						[
-							/\s*[iI][nN][pP][uU][tT][sS]:[\t\r ]*((\/\/)|(\/\*)|\n|$)/,
-							'inputs',
-						],
+						[/\s*[iI][nN][pP][uU][tT]:[\t\r ]*((\/\/)|(\/\*)|\n|$)/, 'inputs'],
 						[/\s*[sS][uU][bB][\t\r ]*((\/\/)|(\/\*)|\n|$)/, 'sub'],
 						[/\s*[aA][dD][dD][\t\r ]*((\/\/)|(\/\*)|\n|$)/, 'add'],
 						[/\s*[oO][rR][\t\r ]*((\/\/)|(\/\*)|\n|$)/, 'or'],
@@ -109,19 +107,19 @@ const MyvmEditor = (props: Props) => {
 		<Editor
 			options={{
 				minimap: { enabled: false },
-				value: 'program:\nadd\nsub\nnop\n0x111\n0b111\n111',
+				value: HelloWorld,
 				language: 'myvm',
 				theme: 'myvm-theme',
 				scrollBeyondLastLine: false,
 				renderFinalNewline: false,
 			}}
-			language={'myvm'}
-			theme={'myvm-theme'}
+			language='myvm'
+			theme='myvm-theme'
 			width={window.width / 2}
 			height={window.height}
 			className={props.className}
 			onChange={props.onChange}
-			value={'program:\nadd\nsub\nnop\n0x111\n0b111\n111'}
+			value={HelloWorld}
 		/>
 	);
 };
