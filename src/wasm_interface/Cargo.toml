@@ -3,6 +3,12 @@ name = "wasm_interface"
 version = "0.1.0"
 authors = ["Bwallker"]
 edition = "2021"
+[profile.dev]
+opt-level = "s"
+strip = true
+debug = 0
+dedub-assertion = false
+lto = true
 
 [lib]
 crate-type = ["cdylib"]

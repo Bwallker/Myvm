@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "build": "webpack && cp -r ./pkg ../../website/",
+    "build": "url https://sh.rustup.rs -sSf | sh -s -- -y && source $HOME/.cargo/env && webpack && cp -r ./pkg ../../website/",
     "serve": "webpack-dev-server"
   },
   "devDependencies": {

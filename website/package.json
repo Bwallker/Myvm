@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "cd ../src/wasm_interface && npm run build && cd ../../website && next build",
+    "build": "curl https://sh.rustup.rs -sSf | sh -s -- -y && source $HOME/.cargo/env && cd ../src/wasm_interface && npm run build && cd ../../website && next build",
     "start": "next start",
     "lint": "next lint",
     "setup": "tsc --build setup.tsconfig.json && node ./setupOut/cleanup.js && node ./setupOut/setup.js"
@@ -26,6 +26,7 @@
     "@typescript-eslint/eslint-plugin": "^5.25.0",
     "eslint": "8.15.0",
     "eslint-config-next": "12.1.6",
-    "typescript": "4.6.4"
+    "typescript": "4.6.4",
+    "webpack-cli": "^4.9.2"
   }
 }
