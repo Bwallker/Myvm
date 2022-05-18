@@ -17,6 +17,12 @@ const MyvmEditor = (props: Props) => {
 			monaco.languages.setMonarchTokensProvider('myvm', {
 				tokenizer: {
 					root: [
+						[/\s*[mM][aA][cC][rR][oO]\s+/, 'macroKeyword'],
+						[
+							/\s*[eE][nN][dD]_[mM][aA][cC][rR][oO]:[\t\r ]*((\/\/)|(\/\*)|\n|$)/,
+							'endMacro',
+						],
+						[/\s*%[a-zA-Z]\w*/, 'macroArg'],
 						[/\s*0[xX][\da-fA-F]+/, 'hexLiteral'],
 						[/\s*0[bB][01]+/, 'binLiteral'],
 						[/\s*\d+/, 'decLiteral'],
@@ -86,6 +92,10 @@ const MyvmEditor = (props: Props) => {
 					{ token: 'xnor', ...arithmeticStyling },
 					{ token: 'and', ...arithmeticStyling },
 					{ token: 'nand', ...arithmeticStyling },
+
+					{ token: 'macroArg', foreground: 'aabbcc', fontStyle: 'bold' },
+					{ token: 'macroKeyword', foreground: 'ccbbaa', fontStyle: 'bold' },
+					{ token: 'endMacro', foreground: 'abcabc', fontStyle: 'bold' },
 				],
 				colors: { 'editor.foreground': '#ffffff' },
 			});

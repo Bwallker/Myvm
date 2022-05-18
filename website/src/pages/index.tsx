@@ -1,5 +1,5 @@
 import type { NextPage } from 'next';
-import MyvmEditor from './MyvmEditor';
+import MyvmEditor from '../components/MyvmEditor';
 import { useState } from 'react';
 import Parse from '../util/Parse';
 import Hello_world from '../../myvm_examples/hello_world';

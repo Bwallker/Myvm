@@ -137,7 +137,7 @@ fn parse_input(mut tree: Pairs<Rule>) -> (Vec<u8>, Pairs<Rule>) {
                             'r' => b'\r',
                             'n' => b'\n',
                             't' => b'\t',
-                            '0' => 0,
+                            '0' => b'\0',
                             _ => unreachable!(),
                         }
                     } else {
