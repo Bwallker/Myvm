@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "curl https://sh.rustup.rs -sSf | sh -s -- -y && source $HOME/.cargo/env && cd ../src/wasm_interface && npm run build && cd ../../website && next build",
+    "build": "curl \"https://sh.rustup.rs\" -sSf | (sh -s -- -y) && source $HOME/.cargo/env && cd ../src/wasm_interface && npm run build && cd ../../website && next build",
     "start": "next start",
     "lint": "next lint",
     "setup": "tsc --build setup.tsconfig.json && node ./setupOut/cleanup.js && node ./setupOut/setup.js"
