@@ -57,12 +57,16 @@ const MyvmEditor = (props: Props) => {
 							/\s*'(.|\\n|\\t|\\r|\\0)'[\t\r ]*((\/\/)|(\/\*)|\n|$)/,
 							'charLiteral',
 						],
+						[/\/\/.*/, 'lineComment'],
+						[/\/\*(\*(?!\/)|[^*])*\*\//, 'blockComment'],
 					],
 				},
 			});
+
 			const literalStyling = { foreground: 'FFA500', fontStyle: 'bold' };
 			const conditionalStyling = { foreground: '00a0a0', fontStyle: 'bold' };
 			const arithmeticStyling = { foreground: 'a000a0', fontStyle: 'bold' };
+			const commentStyling = { foreground: '666666', fontStyle: 'bold' };
 			monaco.editor.defineTheme('myvm-theme', {
 				base: 'vs-dark',
 				inherit: false,
@@ -96,6 +100,9 @@ const MyvmEditor = (props: Props) => {
 					{ token: 'macroArg', foreground: 'aabbcc', fontStyle: 'bold' },
 					{ token: 'macroKeyword', foreground: 'ccbbaa', fontStyle: 'bold' },
 					{ token: 'endMacro', foreground: 'abcabc', fontStyle: 'bold' },
+
+					{ token: 'blockComment', ...commentStyling },
+					{ token: 'lineComment', ...commentStyling },
 				],
 				colors: { 'editor.foreground': '#ffffff' },
 			});
