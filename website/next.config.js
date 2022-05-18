@@ -6,6 +6,9 @@ const nextConfig = {
 		config.experiments = { asyncWebAssembly: true };
 		return config;
 	},
+	future: {
+		webpack5: false,
+	},
 };
 
 export default nextConfig;

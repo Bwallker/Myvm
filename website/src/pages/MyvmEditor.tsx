@@ -17,9 +17,9 @@ const MyvmEditor = (props: Props) => {
 			monaco.languages.setMonarchTokensProvider('myvm', {
 				tokenizer: {
 					root: [
-						[/\s*0[xX][\da-fA-F]+([\t ]+|\n|$)/, 'hexLiteral'],
-						[/\s*0[bB][01]+([\t ]+|\n|$)/, 'binLiteral'],
-						[/\s*\d+([\t ]+|\n|$)/, 'decLiteral'],
+						[/\s*0[xX][\da-fA-F]+/, 'hexLiteral'],
+						[/\s*0[bB][01]+/, 'binLiteral'],
+						[/\s*\d+/, 'decLiteral'],
 						[
 							/\s*[pP][rR][oO][gG][rR][aA][mM]:[\t\r ]*((\/\/)|(\/\*)|\n|$)/,
 							'program',
