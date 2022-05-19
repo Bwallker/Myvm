@@ -71,12 +71,12 @@ full_macro = {macro_def ~ macro_body ~ end_of_macro}
 macro_body = {(!(end_of_macro) ~ ANY)*}
 end_of_macro = {WHITE_SPACE* ~ "end_macro:" ~ end_of_line}
 
-macro_def = ${WHITE_SPACE* ~ ^"macro" ~ WHITE_SPACE+ ~  identifier ~ WHITE_SPACE* ~ "(" ~ macro_args ~ "):" ~ end_of_line}
+macro_def = ${WHITE_SPACE* ~ ^"macro" ~ WHITE_SPACE+ ~  identifier ~ WHITE_SPACE* ~ "(" ~ WHITESPACE* ~ macro_args ~ WHITESPACE* ~ "):" ~ end_of_line}
 macro_args = {WHITE_SPACE* ~ (macro_arg ~ ("," ~ WHITE_SPACE* ~ macro_arg ~ WHITE_SPACE*)*)?}
 macro_arg = ${"%" ~ identifier}
 arg = {(!("," | ")") ~ ANY)*}
 args = {WHITE_SPACE* ~ (arg ~ ("," ~ WHITE_SPACE* ~ arg ~ WHITE_SPACE*)*)?}
-macro_call = ${WHITE_SPACE* ~  identifier ~ WHITE_SPACE* ~ "(" ~ args ~ ")" ~ end_of_line}
+macro_call = ${WHITE_SPACE* ~  identifier ~ WHITE_SPACE* ~ "(" ~ WHITESPACE* ~ args ~ WHITESPACE* ~ ")" ~ end_of_line}
 
 constant = ${WHITESPACE* ~ identifier ~ WHITESPACE* ~ "=" ~ WHITESPACE* ~ const_val}
 const_val = {(literal | identifier) ~ end_of_line ~ (NEWLINE | EOI)}
