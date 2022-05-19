@@ -5,6 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "vercelBuild": "next build",
     "build": "cd ../src/wasm_interface && npm run build && cd ../../website && next build",
     "start": "next start",
     "lint": "next lint",
