@@ -58,7 +58,11 @@ pub fn parse(program: &str) -> Result<SuccessfulParse> {
                     Rule::empty => (),
                     Rule::constant => (),
                     Rule::use_label_or_const => {
-                        let val = *label_positions.get(node.as_str().trim()).unwrap();
+                        let val = label_positions.get(node.as_str().trim());
+                        if val == None {
+                            return Err(eyre!("Unknown identifier: {}", node.as_str().trim()));
+                        }
+                        let val = *val.unwrap();
                         if val > 63 {
                             return Err(eyre!("You tried to use a label with a value greater than 63 which is not supported."));
                         }
