@@ -40,4 +40,4 @@ yarn-error.log*
 generated
 setupOut
 package-lock.json
-!pkg
+pkg
