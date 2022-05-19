@@ -131,7 +131,7 @@ fn parse_input(mut tree: Pairs<Rule>) -> (Vec<u8>, Pairs<Rule>) {
                 Rule::char_input => {
                     let as_str = inner.as_str().trim();
                     let l = as_str.len();
-                    let contents = &as_str[1..l];
+                    let contents = &as_str[1..l - 1];
                     if contents.len() == 1 {
                         contents.chars().next().unwrap() as u32 as u8
                     } else if contents.len() == 2 {

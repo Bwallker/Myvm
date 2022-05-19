@@ -1,3 +1,6 @@
+input:
+'\a'
+
 program:
 
 macro output_literal(%literal): // I am a comment at the end of a macro definition
@@ -24,7 +27,6 @@ end_macro:
 // 63 is biggest literal value we can load, we still need to add 9 to get to H
 63
 mov 0 3
-dsads
 // H
 print_positive_offset(9)
 // E
