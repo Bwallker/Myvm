@@ -7,6 +7,10 @@ interface Props {
 	className?: string;
 	style?: CSSProperties;
 	onChange?: OnChange;
+	readonly?: boolean;
+	initialValue?: string;
+	width?: number;
+	height?: number;
 }
 
 const MyvmEditor = (props: Props) => {
@@ -132,23 +136,30 @@ const MyvmEditor = (props: Props) => {
 		return () => void 0;
 	});
 	const window = useWindowDimensions();
+	const initialValue = props.initialValue ?? HelloWorld;
+	const width =
+		props.width === undefined ? window.width / 2 : window.width * props.width;
+	const height =
+		props.height === undefined ? window.height : window.width * props.height;
+
 	return (
 		<Editor
 			options={{
 				minimap: { enabled: false },
-				value: HelloWorld,
+				value: initialValue,
 				language: 'myvm',
 				theme: 'myvm-theme',
 				scrollBeyondLastLine: false,
 				renderFinalNewline: false,
+				readOnly: props.readonly,
 			}}
 			language='myvm'
 			theme='myvm-theme'
-			width={window.width / 2}
-			height={window.height}
+			width={width}
+			height={height}
 			className={props.className}
 			onChange={props.onChange}
-			value={HelloWorld}
+			value={initialValue}
 		/>
 	);
 };
