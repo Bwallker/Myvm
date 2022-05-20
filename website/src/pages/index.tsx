@@ -1,9 +1,10 @@
 import type { NextPage } from 'next';
 import MyvmEditor from '../components/MyvmEditor';
-import Parse from '../util/Parse';
+import Assemble from '../components/Assemble';
 import { useState } from 'react';
 import Hello_world from '../../myvm_examples/hello_world';
 import { Tab, TabList, TabPanel, Tabs } from 'react-tabs';
+import Run from '../components/Run';
 
 const HelloWorld = Hello_world;
 const Home: NextPage = () => {
@@ -30,10 +31,10 @@ const Home: NextPage = () => {
 					</TabList>
 
 					<TabPanel>
-						<Parse input={contents} />
+						<Assemble input={contents} />
 					</TabPanel>
 					<TabPanel>
-						<div>WIP</div>
+						<Run input={contents} />
 					</TabPanel>
 				</Tabs>
 			</div>

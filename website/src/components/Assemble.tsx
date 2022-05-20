@@ -1,17 +1,17 @@
 import dynamic from 'next/dynamic';
 import { ReactNode } from 'react';
-import { WasmSuccessfulParse } from '../../pkg/index';
-import MyvmEditor from '../components/MyvmEditor';
+import { WasmSuccessfulParse } from '../../pkg';
+import MyvmEditor from './MyvmEditor';
 import Collapsible from 'react-collapsible';
 
-type ParseResult = ParseErr | ParseOk;
+export type ParseResult = ParseErr | ParseOk;
 
-interface ParseOk {
+export interface ParseOk {
 	wasSuccessful: true;
 	parsed: WasmSuccessfulParse;
 }
 
-interface ParseErr {
+export interface ParseErr {
 	wasSuccessful: false;
 	error: string;
 }
@@ -89,10 +89,10 @@ const ParseInput = (props: { input: ParseResult }): JSX.Element => {
 	}
 };
 
-const Parse = dynamic({
+const Assemble = dynamic({
 	loader: async () => {
 		// Import the wasm module
-		const rustModule = await import('../../pkg/index');
+		const rustModule = await import('../../pkg');
 
 		// Return a React component that calls the add_one method on the wasm module
 		// eslint-disable-next-line react/display-name
@@ -117,4 +117,4 @@ const Parse = dynamic({
 	ssr: false,
 });
 
-export default Parse;
+export default Assemble;
