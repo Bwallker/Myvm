@@ -58,7 +58,7 @@ const MyvmEditor = (props: Props) => {
 							'in',
 						],
 
-						[/[a-zA-Z]\w*/, 'ident'],
+						[/(?<=\W|^)([A-Za-z])\w+/, 'ident'],
 						[/'(.|\\n|\\t|\\r|\\0)'(?=(|$|\s|\W))/g, 'charLiteral'],
 						[/\/\/.*/g, 'lineComment'],
 						[/\/\*(\*(?!\/)|[^*])*\*\//g, 'blockComment'],

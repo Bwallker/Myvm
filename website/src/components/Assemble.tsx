@@ -1,4 +1,3 @@
-import dynamic from 'next/dynamic';
 import { ReactNode } from 'react';
 import { WasmSuccessfulParse } from '../../pkg';
 import MyvmEditor from './MyvmEditor';
@@ -26,7 +25,7 @@ const decimalToHex = (d: number, padding: number) => {
 	return '0x' + hex;
 };
 
-const ParseInput = (props: { input: ParseResult }): JSX.Element => {
+const AssembleInput = (props: { input: ParseResult }): JSX.Element => {
 	if (!props.input.wasSuccessful) {
 		return (
 			<div>
@@ -89,32 +88,4 @@ const ParseInput = (props: { input: ParseResult }): JSX.Element => {
 	}
 };
 
-const Assemble = dynamic({
-	loader: async () => {
-		// Import the wasm module
-		const rustModule = await import('../../pkg');
-
-		// Return a React component that calls the add_one method on the wasm module
-		// eslint-disable-next-line react/display-name
-		return (props: { input: string }) => {
-			let toParse: ParseResult;
-			try {
-				const res = rustModule.parse_wasm_edition(props.input);
-				toParse = {
-					wasSuccessful: true,
-					parsed: res,
-				};
-			} catch (e) {
-				toParse = {
-					wasSuccessful: false,
-					error: e + '',
-				};
-			}
-
-			return <ParseInput input={toParse} />;
-		};
-	},
-	ssr: false,
-});
-
-export default Assemble;
+export default AssembleInput;

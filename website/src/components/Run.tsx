@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import BytecodeInterpreter from '../interpreter/BytecodeInterpreter';
-import dynamic from 'next/dynamic';
 import { ParseResult } from './Assemble';
 
 interface RegisterProps {
@@ -18,34 +17,6 @@ const Register = (props: RegisterProps) => (
 interface Props {
 	input: ParseResult;
 }
-
-const RunWasm = dynamic({
-	loader: async () => {
-		// Import the wasm module
-		const rustModule = await import('../../pkg');
-
-		// Return a React component that calls the add_one method on the wasm module
-		// eslint-disable-next-line react/display-name
-		return (props: { input: string }) => {
-			let toParse: ParseResult;
-			try {
-				const res = rustModule.parse_wasm_edition(props.input);
-				toParse = {
-					wasSuccessful: true,
-					parsed: res,
-				};
-			} catch (e) {
-				toParse = {
-					wasSuccessful: false,
-					error: e + '',
-				};
-			}
-
-			return <Run input={toParse} />;
-		};
-	},
-	ssr: false,
-});
 
 const Run = (props: Props) => {
 	const [reg0, setReg0] = useState(0);
@@ -106,4 +77,4 @@ const Run = (props: Props) => {
 	);
 };
 
-export default RunWasm;
+export default Run;
