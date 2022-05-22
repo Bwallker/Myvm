@@ -19,8 +19,8 @@ const Run = (props: Props) => {
 	const [useStdin, setUseStdin] = useState(false);
 	const [stdin, setStdin] = useState('');
 	const [bufferedStdin, setBufferedStdin] = useState('');
-	const [isRunning, setIsRunning] = useState(true);
-	const [isPerformingAllInOne, setIsPerformingAllInOne] = useState(true);
+	const [isRunning, setIsRunning] = useState(false);
+	const [isPerformingAllInOne, setIsPerformingAllInOne] = useState(false);
 	let program: Uint8Array,
 		inputs: Uint8Array,
 		programNumber: number[],
@@ -62,18 +62,20 @@ const Run = (props: Props) => {
 			if (!useStdin) {
 				return inputNumber.pop();
 			} else {
-				const ret = bufferedStdin[0];
+				const ret = bufferedStdin.charCodeAt(0);
 				setBufferedStdin(bufferedStdin.substring(1));
 				if (ret === undefined) {
-					return ret;
+					return undefined;
 				} else {
-					return ret.charCodeAt(0);
+					return ret;
 				}
 			}
 		},
 		program: programNumber,
 		pc,
 		registers: new Uint8Array([reg0, reg1, reg2, reg3, reg4, reg5]),
+		isRunning: isRunning,
+		isPerformingAllInOne: isPerformingAllInOne,
 	});
 
 	if (!props.input.wasSuccessful) {
@@ -100,6 +102,16 @@ const Run = (props: Props) => {
 		<div>
 			<Button
 				onClick={() => {
+					if (isRunning) {
+						setPC(0);
+						setReg0(0);
+						setReg1(0);
+						setReg2(0);
+						setReg3(0);
+						setReg4(0);
+						setReg5(0);
+						output.current = '';
+					}
 					if (isPerformingAllInOne) {
 						setIsRunning(false);
 						setIsPerformingAllInOne(false);

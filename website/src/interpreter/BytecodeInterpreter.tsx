@@ -13,6 +13,8 @@ interface Props {
 	program: number[];
 	pc: number;
 	registers: Uint8Array;
+	isRunning: boolean;
+	isPerformingAllInOne: boolean;
 }
 
 interface RegisterProps {
@@ -39,16 +41,6 @@ const RenderState = (props: Props) => (
 	</div>
 );
 
-interface PerformInstructionOk extends InterpretOk {
-	shouldContinue: boolean;
-}
-
-interface PerformInstructionErr extends InterpretErr {
-	shouldContinue: false;
-}
-
-type PerformInstructionResult = PerformInstructionOk | PerformInstructionErr;
-
 interface InterpretOk {
 	error: '';
 	elem: JSX.Element;
@@ -62,6 +54,16 @@ interface InterpretErr {
 }
 
 type InterpretResult = InterpretOk | InterpretErr;
+
+interface PerformInstructionOk extends InterpretOk {
+	shouldContinue: boolean;
+}
+
+interface PerformInstructionErr extends InterpretErr {
+	shouldContinue: false;
+}
+
+type PerformInstructionResult = PerformInstructionOk | PerformInstructionErr;
 
 const performInstruction = (args: Props): PerformInstructionResult => {
 	if (args.registers.length !== 6) {
@@ -276,12 +278,11 @@ const performInstruction = (args: Props): PerformInstructionResult => {
 
 type Registers = Uint8Array;
 const useBytecodeInterpreter = (props: Props): InterpretResult => {
-	const shouldBreak = useRef(false);
-	let err: string | null = null;
-	if (props.program.length > 255 || props.program.length === 0) {
-		err =
-			'Program length must be greater than zero and less than 256. It was ' +
-			props.program.length;
+	const parseErr = useRef<string | null>(null);
+	const runtimeErr = useRef<string | null>(null);
+	if (props.program.length > 255) {
+		parseErr.current =
+			'Program length must be less than 256. It was ' + props.program.length;
 	}
 	for (const instruction of props.program) {
 		if (
@@ -289,31 +290,33 @@ const useBytecodeInterpreter = (props: Props): InterpretResult => {
 			instruction < 0 ||
 			instruction > 255
 		) {
-			err =
+			parseErr.current =
 				'Every instruction in your program must be an integer between 0 and 255. One instruction was ' +
 				instruction;
 		}
 	}
-	const registers: Registers = new Uint8Array(6);
-	for (let i = 0; i < registers.length; i++) {
-		registers[i] = 0;
-	}
-	const setReg0 = (newVal: number) => (registers[0] = newVal);
-	const setReg1 = (newVal: number) => (registers[1] = newVal);
-	const setReg2 = (newVal: number) => (registers[2] = newVal);
-	const setReg3 = (newVal: number) => (registers[3] = newVal);
-	const setReg4 = (newVal: number) => (registers[4] = newVal);
-	const setReg5 = (newVal: number) => (registers[5] = newVal);
 
-	let pc = 0;
-	const setPC = (newVal: number) => (pc = newVal);
 	// eslint-disable-next-line react-hooks/rules-of-hooks
 	useEffect(() => {
-		if (err !== null) {
-			shouldBreak.current = true;
+		console.log('Program: ' + props.program);
+		if (!props.isPerformingAllInOne || !props.isRunning) {
 			return;
 		}
-		while (!shouldBreak.current) {
+		const registers: Registers = new Uint8Array(6);
+		for (let i = 0; i < registers.length; i++) {
+			registers[i] = 0;
+		}
+		const setReg0 = (newVal: number) => (registers[0] = newVal);
+		const setReg1 = (newVal: number) => (registers[1] = newVal);
+		const setReg2 = (newVal: number) => (registers[2] = newVal);
+		const setReg3 = (newVal: number) => (registers[3] = newVal);
+		const setReg4 = (newVal: number) => (registers[4] = newVal);
+		const setReg5 = (newVal: number) => (registers[5] = newVal);
+
+		let pc = 0;
+		const setPC = (newVal: number) => (pc = newVal);
+
+		while (true) {
 			const comp = performInstruction({
 				pc,
 				setPC,
@@ -327,12 +330,14 @@ const useBytecodeInterpreter = (props: Props): InterpretResult => {
 				program: props.program,
 				readFromInput: props.readFromInput,
 				writeToOutput: props.writeToOutput,
+				isRunning: props.isRunning,
+				isPerformingAllInOne: props.isPerformingAllInOne,
 			});
 			if (!comp.wasSuccessful) {
-				// eslint-disable-next-line react-hooks/exhaustive-deps
-				err = comp.error;
-				shouldBreak.current = false;
+				runtimeErr.current = comp.error;
 				return;
+			} else {
+				runtimeErr.current = null;
 			}
 			props.setPC(pc);
 			props.setReg0(registers[0]!);
@@ -342,12 +347,22 @@ const useBytecodeInterpreter = (props: Props): InterpretResult => {
 			props.setReg4(registers[4]!);
 			props.setReg5(registers[5]!);
 
-			if (!comp.shouldContinue) shouldBreak.current = true;
+			if (!comp.shouldContinue) return;
 		}
-	});
-	if (err !== null) {
-		return { wasSuccessful: false, elem: null, error: err ?? '' };
+	}, [props]);
+	if (parseErr.current !== null) {
+		const e = parseErr.current;
+		return { wasSuccessful: false, elem: null, error: e ?? '' };
 	}
+	if (runtimeErr.current !== null) {
+		const e = runtimeErr.current;
+		return {
+			wasSuccessful: false,
+			elem: null,
+			error: e ?? '',
+		};
+	}
+
 	return { wasSuccessful: true, elem: RenderState(props), error: '' };
 };
 export default useBytecodeInterpreter;
