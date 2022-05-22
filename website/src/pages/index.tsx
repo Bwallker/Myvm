@@ -177,11 +177,11 @@ const Home: NextPage = () => {
 								function={'Function: Copy the value in $from into $to'}
 								notes={[
 									'Notes: $from can be a register or INPUT. $to can be a register or OUTPUT. Aliases for INPUT are "i", "in", "input". Aliases for OUTPUT are "o", "out", "output". ',
-									<br />,
-									<br />,
+									<br key='1' />,
+									<br key='2' />,
 									'So if you want to copy a byte from input into output use "mov in out".',
-									<br />,
-									<br />,
+									<br key='3' />,
+									<br key='4' />,
 									'If you want to copy from register 1 into register 2 use "mov 1 2" or mov "reg1 reg2"',
 								]}
 							/>

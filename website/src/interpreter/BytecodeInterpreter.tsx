@@ -1,25 +1,287 @@
-import { Dispatch, SetStateAction } from 'react';
+import { useEffect, useRef } from 'react';
 
 interface Props {
-	setReg0: Dispatch<SetStateAction<number>>;
-	setReg1: Dispatch<SetStateAction<number>>;
-	setReg2: Dispatch<SetStateAction<number>>;
-	setReg3: Dispatch<SetStateAction<number>>;
-	setReg4: Dispatch<SetStateAction<number>>;
-	setReg5: Dispatch<SetStateAction<number>>;
-	setPC: Dispatch<SetStateAction<number>>;
+	setReg0: (newVal: number) => void;
+	setReg1: (newVal: number) => void;
+	setReg2: (newVal: number) => void;
+	setReg3: (newVal: number) => void;
+	setReg4: (newVal: number) => void;
+	setReg5: (newVal: number) => void;
+	setPC: (newVal: number) => void;
 	writeToOutput: (newestEntry: number) => void;
 	readFromInput: () => number | undefined;
 	program: number[];
+	pc: number;
+	registers: Uint8Array;
 }
 
-type Registers = [number, number, number, number, number, number];
-const BytecodeInterpreter = (props: Props) => {
+interface RegisterProps {
+	value: number;
+	name: string;
+}
+
+const Register = (props: RegisterProps) => (
+	<div>
+		<h1>{props.name}</h1>
+		<p>{props.value}</p>
+	</div>
+);
+
+const RenderState = (props: Props) => (
+	<div>
+		<Register value={props.registers[0]!} name='Reg0' />
+		<Register value={props.registers[1]!} name='Reg1' />
+		<Register value={props.registers[2]!} name='Reg2' />
+		<Register value={props.registers[3]!} name='Reg3' />
+		<Register value={props.registers[4]!} name='Reg4' />
+		<Register value={props.registers[5]!} name='Reg5' />
+		<Register value={props.pc} name='PC' />
+	</div>
+);
+
+interface PerformInstructionOk extends InterpretOk {
+	shouldContinue: boolean;
+}
+
+interface PerformInstructionErr extends InterpretErr {
+	shouldContinue: false;
+}
+
+type PerformInstructionResult = PerformInstructionOk | PerformInstructionErr;
+
+interface InterpretOk {
+	error: '';
+	elem: JSX.Element;
+	wasSuccessful: true;
+}
+
+interface InterpretErr {
+	error: string;
+	elem: null;
+	wasSuccessful: false;
+}
+
+type InterpretResult = InterpretOk | InterpretErr;
+
+const performInstruction = (args: Props): PerformInstructionResult => {
+	if (args.registers.length !== 6) {
+		return {
+			wasSuccessful: false,
+			error:
+				'This virtual machine uses 6 registers, ' +
+				args.registers.length +
+				' registers.',
+			shouldContinue: false,
+			elem: null,
+		};
+	}
+	const instruction = args.program[args.pc];
+	if (instruction === undefined) {
+		return {
+			wasSuccessful: true,
+			error: '',
+			shouldContinue: false,
+			elem: RenderState(args),
+		};
+	}
+	switch ((instruction & 0b11_00_00_00) >> 6) {
+		case 0b00: {
+			const body = instruction & 0b00_111_111;
+			args.setReg0(body);
+			args.setPC(args.pc + 1);
+			return {
+				wasSuccessful: true,
+				error: '',
+				shouldContinue: true,
+				elem: RenderState(args),
+			};
+		}
+		case 0b01: {
+			if ((instruction & 0b00_111_000) !== 0) {
+				return {
+					wasSuccessful: false,
+					error:
+						'Bad conditional instruction! Middle three bits were not zeroed! Instruction occurred at pc ' +
+						args.pc,
+					shouldContinue: false,
+					elem: null,
+				};
+			}
+			let should_jump: boolean;
+			switch (instruction & 0b00_000_111) {
+				case 0b000:
+					should_jump = false;
+					break;
+				case 0b001:
+					should_jump = args.registers[3]! === 0;
+					break;
+				case 0b010:
+					should_jump = args.registers[3]! > 0;
+					break;
+				case 0b011:
+					should_jump = args.registers[3]! >= 0;
+					break;
+				case 0b100:
+					should_jump = true;
+					break;
+				case 0b101:
+					should_jump = args.registers[3]! !== 0;
+					break;
+				case 0b110:
+					should_jump = args.registers[3]! <= 0;
+					break;
+				case 0b111:
+					should_jump = args.registers[3]! < 0;
+					break;
+				default:
+					return {
+						wasSuccessful: false,
+						error: 'Conditional unreachable',
+						shouldContinue: false,
+						elem: null,
+					};
+			}
+			if (should_jump) {
+				args.setPC(args.registers[0]!);
+			} else {
+				args.setPC(args.pc + 1);
+			}
+			return {
+				wasSuccessful: true,
+				error: '',
+				shouldContinue: true,
+				elem: RenderState(args),
+			};
+		}
+		case 0b10: {
+			const input = (instruction & 0b00_111_000) >> 3;
+			const output = instruction & 0b00_000_111;
+			if (input === 7) {
+				return {
+					wasSuccessful: false,
+					error: '7 is not a valid input for a move instruction!',
+					shouldContinue: false,
+					elem: null,
+				};
+			}
+			if (output === 7) {
+				return {
+					wasSuccessful: false,
+					error: '7 is not a valid output for a move instruction!',
+					shouldContinue: false,
+					elem: null,
+				};
+			}
+			let inputData: number;
+			if (input === 6) {
+				const x = args.readFromInput();
+				if (x === undefined) {
+					return {
+						wasSuccessful: false,
+						error:
+							'Input returned undefined when the interpreter tried to read from it! This means the input was not long enough to satisfy the program!',
+						shouldContinue: false,
+						elem: null,
+					};
+				}
+				inputData = x;
+			} else {
+				inputData = args.registers[input]!;
+			}
+			if (output === 6) {
+				args.writeToOutput(inputData);
+			} else {
+				args.registers[output]! = inputData;
+			}
+			args.setPC(args.pc + 1);
+
+			return {
+				wasSuccessful: true,
+				error: '',
+				shouldContinue: true,
+				elem: RenderState(args),
+			};
+		}
+		case 0b11: {
+			if ((instruction & 0b00_111_000) !== 0) {
+				return {
+					wasSuccessful: false,
+					error:
+						'Bad arithmetic instruction! Middle three bits were not zeroed! Instruction occurred at pc ' +
+						args.pc,
+					shouldContinue: false,
+					elem: null,
+				};
+			}
+			let res: number;
+			const reg1 = args.registers[1]!;
+			const reg2 = args.registers[2]!;
+			switch (instruction & 0b00_000_111) {
+				case 0b000:
+					res = reg1 + reg2;
+					break;
+				case 0b001:
+					res = reg1 & reg2;
+					break;
+				case 0b010:
+					res = reg1 | reg2;
+					break;
+				case 0b011:
+					res = reg1 ^ reg2;
+					break;
+				case 0b100:
+					res = reg1 - reg2;
+					break;
+				case 0b101:
+					res = ~(reg1 & reg2);
+					break;
+				case 0b110:
+					res = ~(reg1 | reg2);
+					break;
+				case 0b111:
+					res = ~(reg1 ^ reg2);
+					break;
+				default:
+					return {
+						wasSuccessful: false,
+						error: 'Arithmetic unreachable!',
+						shouldContinue: false,
+						elem: null,
+					};
+			}
+			if (res < 0) {
+				res += 256;
+			}
+			res %= 255;
+			args.setReg3(res);
+			args.setPC(args.pc + 1);
+			return {
+				wasSuccessful: true,
+				error: '',
+				shouldContinue: true,
+				elem: RenderState(args),
+			};
+		}
+
+		default:
+			return {
+				wasSuccessful: false,
+				error:
+					'Unreachable! instruction must always start with 0b00, 0b01, 0b10 or 0b11',
+				shouldContinue: false,
+				elem: null,
+			};
+	}
+};
+
+type Registers = Uint8Array;
+const useBytecodeInterpreter = (props: Props): InterpretResult => {
+	const shouldBreak = useRef(false);
+	let err: string | null = null;
 	if (props.program.length > 255 || props.program.length === 0) {
-		throw new Error(
+		err =
 			'Program length must be greater than zero and less than 256. It was ' +
-				props.program.length,
-		);
+			props.program.length;
 	}
 	for (const instruction of props.program) {
 		if (
@@ -27,160 +289,65 @@ const BytecodeInterpreter = (props: Props) => {
 			instruction < 0 ||
 			instruction > 255
 		) {
-			throw new Error(
+			err =
 				'Every instruction in your program must be an integer between 0 and 255. One instruction was ' +
-					instruction,
-			);
+				instruction;
 		}
 	}
-	const registers: Registers = new Array(6) as Registers;
+	const registers: Registers = new Uint8Array(6);
 	for (let i = 0; i < registers.length; i++) {
 		registers[i] = 0;
 	}
+	const setReg0 = (newVal: number) => (registers[0] = newVal);
+	const setReg1 = (newVal: number) => (registers[1] = newVal);
+	const setReg2 = (newVal: number) => (registers[2] = newVal);
+	const setReg3 = (newVal: number) => (registers[3] = newVal);
+	const setReg4 = (newVal: number) => (registers[4] = newVal);
+	const setReg5 = (newVal: number) => (registers[5] = newVal);
+
 	let pc = 0;
-	while (true) {
-		console.log(pc);
-		props.setReg0(registers[0]);
-		props.setReg1(registers[1]);
-		props.setReg2(registers[2]);
-		props.setReg3(registers[3]);
-		props.setReg4(registers[4]);
-		props.setReg5(registers[5]);
-		props.setPC(pc);
-		const instruction = props.program[pc];
-		if (instruction === undefined) {
-			return <div />;
+	const setPC = (newVal: number) => (pc = newVal);
+	// eslint-disable-next-line react-hooks/rules-of-hooks
+	useEffect(() => {
+		if (err !== null) {
+			shouldBreak.current = true;
+			return;
 		}
-		switch ((instruction & 0b11_00_00_00) >> 6) {
-			case 0b00: {
-				const body = instruction & 0b00_111_111;
-				registers[0] = body;
-				pc++;
-				continue;
+		while (!shouldBreak.current) {
+			const comp = performInstruction({
+				pc,
+				setPC,
+				registers,
+				setReg0,
+				setReg1,
+				setReg2,
+				setReg3,
+				setReg4,
+				setReg5,
+				program: props.program,
+				readFromInput: props.readFromInput,
+				writeToOutput: props.writeToOutput,
+			});
+			if (!comp.wasSuccessful) {
+				// eslint-disable-next-line react-hooks/exhaustive-deps
+				err = comp.error;
+				shouldBreak.current = false;
+				return;
 			}
-			case 0b01: {
-				if ((instruction & 0b00_111_000) !== 0) {
-					throw new Error(
-						'Bad conditional instruction! Middle three bits were not zeroed!',
-					);
-				}
-				let should_jump: boolean;
-				switch (instruction & 0b00_000_111) {
-					case 0b000:
-						should_jump = false;
-						break;
-					case 0b001:
-						should_jump = registers[3] === 0;
-						break;
-					case 0b010:
-						should_jump = registers[3] > 0;
-						break;
-					case 0b011:
-						should_jump = registers[3] >= 0;
-						break;
-					case 0b100:
-						should_jump = true;
-						break;
-					case 0b101:
-						should_jump = registers[3] !== 0;
-						break;
-					case 0b110:
-						should_jump = registers[3] <= 0;
-						break;
-					case 0b111:
-						should_jump = registers[3] < 0;
-						break;
-					default:
-						throw new Error('Conditional unreachable');
-				}
-				if (should_jump) {
-					pc = registers[0];
-				} else {
-					pc++;
-				}
-				continue;
-			}
-			case 0b10: {
-				const input = (instruction & 0b00_111_000) >> 3;
-				const output = instruction & 0b00_000_111;
-				if (input === 7) {
-					throw new Error('7 is not a valid input for a move instruction!');
-				}
-				if (output === 7) {
-					throw new Error('7 is not a valid output for a move instruction!');
-				}
-				let inputData: number;
-				if (input === 6) {
-					const x = props.readFromInput();
-					if (x === undefined) {
-						throw new Error(
-							'Input returned undefined when the interpreter tried to read from it! This means the input was not long enough to satisfy the program!',
-						);
-					}
-					inputData = x;
-				} else {
-					inputData = registers[input]!;
-				}
-				if (output === 6) {
-					props.writeToOutput(inputData);
-				} else {
-					registers[output]! = inputData;
-				}
-				pc++;
-				continue;
-			}
-			case 0b11: {
-				if ((instruction & 0b00_111_000) !== 0) {
-					throw new Error(
-						'Bad arithmetic instruction! Middle three bits were not zeroed!',
-					);
-				}
-				let res: number;
-				const reg1 = registers[1];
-				const reg2 = registers[2];
-				switch (instruction & 0b00_000_111) {
-					case 0b000:
-						res = reg1 + reg2;
-						break;
-					case 0b001:
-						res = reg1 & reg2;
-						break;
-					case 0b010:
-						res = reg1 | reg2;
-						break;
-					case 0b011:
-						res = reg1 ^ reg2;
-						break;
-					case 0b100:
-						res = reg1 - reg2;
-						break;
-					case 0b101:
-						res = ~(reg1 & reg2);
-						break;
-					case 0b110:
-						res = ~(reg1 | reg2);
-						break;
-					case 0b111:
-						res = ~(reg1 ^ reg2);
-						break;
-					default:
-						throw new Error('Arithmetic unreachable');
-				}
-				if (res < 0) {
-					res += 256;
-				}
-				res %= 255;
-				registers[3] = res;
-				pc++;
-				continue;
-			}
+			props.setPC(pc);
+			props.setReg0(registers[0]!);
+			props.setReg1(registers[1]!);
+			props.setReg2(registers[2]!);
+			props.setReg3(registers[3]!);
+			props.setReg4(registers[4]!);
+			props.setReg5(registers[5]!);
 
-			default:
-				throw new Error(
-					'Unreachable! instruction must always start with 0b00, 0b01, 0b10 or 0b11',
-				);
+			if (!comp.shouldContinue) shouldBreak.current = true;
 		}
+	});
+	if (err !== null) {
+		return { wasSuccessful: false, elem: null, error: err ?? '' };
 	}
+	return { wasSuccessful: true, elem: RenderState(props), error: '' };
 };
-
-export default BytecodeInterpreter;
+export default useBytecodeInterpreter;
