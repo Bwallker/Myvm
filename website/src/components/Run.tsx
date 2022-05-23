@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import useBytecodeInterpreter from '../interpreter/BytecodeInterpreter';
 import { ParseResult } from './Assemble';
 import { Button } from 'react-bootstrap';
@@ -21,33 +21,38 @@ const Run = (props: Props) => {
 	const [bufferedStdin, setBufferedStdin] = useState('');
 	const [isRunning, setIsRunning] = useState(false);
 	const [isPerformingAllInOne, setIsPerformingAllInOne] = useState(false);
-	let program: Uint8Array,
-		inputs: Uint8Array,
-		programNumber: number[],
-		inputNumber: number[];
-	if (props.input.wasSuccessful) {
-		program = props.input.parsed.get_program();
-		inputs = props.input.parsed.get_input();
+	const [isWaitingForInput, setIsWaitingForInput] = useState(false);
+	let program: Uint8Array, inputs: Uint8Array;
+	const programNumber = useRef<number[]>([]);
+	const inputNumber = useRef<number[]>([]);
+	const originalInputNumber = useRef<number[]>([]);
+	useMemo(() => {
+		if (props.input.wasSuccessful) {
+			program = props.input.parsed.get_program();
+			inputs = props.input.parsed.get_input();
 
-		programNumber = new Array(program.length);
-		let i = 0;
-		for (const instruction of program) {
-			programNumber[i] = instruction;
-			i++;
+			programNumber.current = new Array(program.length);
+			let i = 0;
+			for (const instruction of program) {
+				programNumber.current[i] = instruction;
+				i++;
+			}
+			i = 0;
+			originalInputNumber.current = new Array(inputs.length);
+			for (const input of inputs) {
+				originalInputNumber.current[i] = input;
+				i++;
+			}
+			originalInputNumber.current.reverse();
+		} else {
+			inputs = new Uint8Array();
+			program = new Uint8Array();
+			programNumber.current = [];
+			inputNumber.current = [];
 		}
-		i = 0;
-		inputNumber = new Array(inputs.length);
-		for (const input of inputs) {
-			inputNumber[i] = input;
-			i++;
-		}
-		inputNumber.reverse();
-	} else {
-		inputs = new Uint8Array();
-		program = new Uint8Array();
-		programNumber = [];
-		inputNumber = [];
-	}
+	}, [props]);
+
+	inputNumber.current = [...originalInputNumber.current];
 
 	const res = useBytecodeInterpreter({
 		setReg0,
@@ -57,10 +62,14 @@ const Run = (props: Props) => {
 		setReg4,
 		setReg5,
 		setPC,
+		setIsWaitingForInput,
+		useStdin,
 		writeToOutput: (x) => (output.current += String.fromCharCode(x)),
 		readFromInput: () => {
 			if (!useStdin) {
-				return inputNumber.pop();
+				console.log('Input number:');
+				console.dir(inputNumber.current);
+				return inputNumber.current.pop();
 			} else {
 				const ret = bufferedStdin.charCodeAt(0);
 				setBufferedStdin(bufferedStdin.substring(1));
@@ -71,13 +80,18 @@ const Run = (props: Props) => {
 				}
 			}
 		},
-		program: programNumber,
+		program: programNumber.current,
 		pc,
 		registers: new Uint8Array([reg0, reg1, reg2, reg3, reg4, reg5]),
 		isRunning: isRunning,
 		isPerformingAllInOne: isPerformingAllInOne,
 	});
 
+	useEffect(() => {
+		if (res.errorType === 'not-enough-input' && useStdin) {
+			inputNumber.current = [...originalInputNumber.current];
+		}
+	}, [res.errorType, originalInputNumber, useStdin]);
 	if (!props.input.wasSuccessful) {
 		return (
 			<div>
@@ -87,7 +101,10 @@ const Run = (props: Props) => {
 		);
 	}
 
-	if (!res.wasSuccessful) {
+	if (
+		!res.wasSuccessful &&
+		(!useStdin || res.errorType !== 'not-enough-input')
+	) {
 		return (
 			<div>
 				<h1>Error:</h1>
@@ -111,6 +128,7 @@ const Run = (props: Props) => {
 						setReg4(0);
 						setReg5(0);
 						output.current = '';
+						inputNumber.current = [...originalInputNumber.current];
 					}
 					if (isPerformingAllInOne) {
 						setIsRunning(false);
@@ -133,6 +151,7 @@ const Run = (props: Props) => {
 				Step
 			</Button>
 			{res.elem}
+			<p>{isWaitingForInput ? 'Waiting for input!' : ''}</p>
 			<label htmlFor='use-stdin'>Use stdin?</label>
 			<input
 				type='checkbox'

@@ -8,11 +8,12 @@ use pest::iterators::{Pair, Pairs};
 use crate::lexer::lex;
 use crate::lexer::Rule;
 
-const MAX_DEPTH: u32 = 10;
+const MAX_DEPTH: u32 = 100;
 
 fn expand_macros_recurse(input: &str, expanded: &mut String) -> Option<Result<()>> {
     expanded.clear();
     let file = lex(&input);
+    println!("Finished lexing this round!");
     if let Err(e) = file {
         return Some(Err(e));
     }
@@ -107,6 +108,7 @@ fn expand_macros_recurse(input: &str, expanded: &mut String) -> Option<Result<()
 }
 
 pub fn expand_macros(mut input: &str) -> Result<String> {
+    println!("Entered expand macros!");
     let mut expanded = String::with_capacity((input.len() * 3) / 2);
     let mut input_s = String::new();
     for i in 0u32.. {

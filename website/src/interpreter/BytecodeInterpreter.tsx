@@ -8,6 +8,7 @@ interface Props {
 	setReg4: (newVal: number) => void;
 	setReg5: (newVal: number) => void;
 	setPC: (newVal: number) => void;
+	setIsWaitingForInput: (newVal: boolean) => void;
 	writeToOutput: (newestEntry: number) => void;
 	readFromInput: () => number | undefined;
 	program: number[];
@@ -15,6 +16,7 @@ interface Props {
 	registers: Uint8Array;
 	isRunning: boolean;
 	isPerformingAllInOne: boolean;
+	useStdin: boolean;
 }
 
 interface RegisterProps {
@@ -45,22 +47,41 @@ interface InterpretOk {
 	error: '';
 	elem: JSX.Element;
 	wasSuccessful: true;
+	errorType: '';
 }
 
 interface InterpretErr {
 	error: string;
 	elem: null;
 	wasSuccessful: false;
+	errorType: InterpretErrorTypes;
 }
 
+type InterpretErrorTypes =
+	| PerformInstructionErrorTypes
+	| 'program-is-too-long'
+	| 'instruction-not-u8';
+
+type PerformInstructionErrorTypes =
+	| 'invalid-arithmetic'
+	| 'wrong-register-amount'
+	| 'invalid-conditional'
+	| 'conditional-unreachable'
+	| 'arithmetic-unreachable'
+	| 'invalid-move-from'
+	| 'invalid-move-to'
+	| 'not-enough-input'
+	| 'prefix-unreachable';
 type InterpretResult = InterpretOk | InterpretErr;
 
 interface PerformInstructionOk extends InterpretOk {
 	shouldContinue: boolean;
+	errorType: '';
 }
 
 interface PerformInstructionErr extends InterpretErr {
 	shouldContinue: false;
+	errorType: PerformInstructionErrorTypes;
 }
 
 type PerformInstructionResult = PerformInstructionOk | PerformInstructionErr;
@@ -70,11 +91,12 @@ const performInstruction = (args: Props): PerformInstructionResult => {
 		return {
 			wasSuccessful: false,
 			error:
-				'This virtual machine uses 6 registers, ' +
+				'This virtual machine uses 6 registers, but the yet it received' +
 				args.registers.length +
 				' registers.',
 			shouldContinue: false,
 			elem: null,
+			errorType: 'wrong-register-amount',
 		};
 	}
 	const instruction = args.program[args.pc];
@@ -84,6 +106,7 @@ const performInstruction = (args: Props): PerformInstructionResult => {
 			error: '',
 			shouldContinue: false,
 			elem: RenderState(args),
+			errorType: '',
 		};
 	}
 	switch ((instruction & 0b11_00_00_00) >> 6) {
@@ -96,6 +119,7 @@ const performInstruction = (args: Props): PerformInstructionResult => {
 				error: '',
 				shouldContinue: true,
 				elem: RenderState(args),
+				errorType: '',
 			};
 		}
 		case 0b01: {
@@ -107,6 +131,7 @@ const performInstruction = (args: Props): PerformInstructionResult => {
 						args.pc,
 					shouldContinue: false,
 					elem: null,
+					errorType: 'invalid-conditional',
 				};
 			}
 			let should_jump: boolean;
@@ -141,6 +166,7 @@ const performInstruction = (args: Props): PerformInstructionResult => {
 						error: 'Conditional unreachable',
 						shouldContinue: false,
 						elem: null,
+						errorType: 'conditional-unreachable',
 					};
 			}
 			if (should_jump) {
@@ -153,6 +179,7 @@ const performInstruction = (args: Props): PerformInstructionResult => {
 				error: '',
 				shouldContinue: true,
 				elem: RenderState(args),
+				errorType: '',
 			};
 		}
 		case 0b10: {
@@ -164,6 +191,7 @@ const performInstruction = (args: Props): PerformInstructionResult => {
 					error: '7 is not a valid input for a move instruction!',
 					shouldContinue: false,
 					elem: null,
+					errorType: 'invalid-move-from',
 				};
 			}
 			if (output === 7) {
@@ -172,6 +200,7 @@ const performInstruction = (args: Props): PerformInstructionResult => {
 					error: '7 is not a valid output for a move instruction!',
 					shouldContinue: false,
 					elem: null,
+					errorType: 'invalid-move-to',
 				};
 			}
 			let inputData: number;
@@ -180,10 +209,10 @@ const performInstruction = (args: Props): PerformInstructionResult => {
 				if (x === undefined) {
 					return {
 						wasSuccessful: false,
-						error:
-							'Input returned undefined when the interpreter tried to read from it! This means the input was not long enough to satisfy the program!',
+						error: 'The input was not long enough to satisfy the program!',
 						shouldContinue: false,
 						elem: null,
+						errorType: 'not-enough-input',
 					};
 				}
 				inputData = x;
@@ -202,6 +231,7 @@ const performInstruction = (args: Props): PerformInstructionResult => {
 				error: '',
 				shouldContinue: true,
 				elem: RenderState(args),
+				errorType: '',
 			};
 		}
 		case 0b11: {
@@ -213,6 +243,7 @@ const performInstruction = (args: Props): PerformInstructionResult => {
 						args.pc,
 					shouldContinue: false,
 					elem: null,
+					errorType: 'invalid-arithmetic',
 				};
 			}
 			let res: number;
@@ -249,6 +280,7 @@ const performInstruction = (args: Props): PerformInstructionResult => {
 						error: 'Arithmetic unreachable!',
 						shouldContinue: false,
 						elem: null,
+						errorType: 'arithmetic-unreachable',
 					};
 			}
 			if (res < 0) {
@@ -262,6 +294,7 @@ const performInstruction = (args: Props): PerformInstructionResult => {
 				error: '',
 				shouldContinue: true,
 				elem: RenderState(args),
+				errorType: '',
 			};
 		}
 
@@ -272,6 +305,7 @@ const performInstruction = (args: Props): PerformInstructionResult => {
 					'Unreachable! instruction must always start with 0b00, 0b01, 0b10 or 0b11',
 				shouldContinue: false,
 				elem: null,
+				errorType: 'prefix-unreachable',
 			};
 	}
 };
@@ -280,9 +314,12 @@ type Registers = Uint8Array;
 const useBytecodeInterpreter = (props: Props): InterpretResult => {
 	const parseErr = useRef<string | null>(null);
 	const runtimeErr = useRef<string | null>(null);
+	const parseErrType = useRef<InterpretErrorTypes | null>(null);
+	const runtimeErrType = useRef<PerformInstructionErrorTypes | null>(null);
 	if (props.program.length > 255) {
 		parseErr.current =
 			'Program length must be less than 256. It was ' + props.program.length;
+		parseErrType.current = 'program-is-too-long';
 	}
 	for (const instruction of props.program) {
 		if (
@@ -293,12 +330,14 @@ const useBytecodeInterpreter = (props: Props): InterpretResult => {
 			parseErr.current =
 				'Every instruction in your program must be an integer between 0 and 255. One instruction was ' +
 				instruction;
+			parseErrType.current = 'instruction-not-u8';
 		}
 	}
-
-	// eslint-disable-next-line react-hooks/rules-of-hooks
 	useEffect(() => {
-		console.log('Program: ' + props.program);
+		console.log('Entered useEffect');
+		console.log('program:');
+		console.log(runtimeErr.current);
+		console.log(props.program);
 		if (!props.isPerformingAllInOne || !props.isRunning) {
 			return;
 		}
@@ -315,7 +354,6 @@ const useBytecodeInterpreter = (props: Props): InterpretResult => {
 
 		let pc = 0;
 		const setPC = (newVal: number) => (pc = newVal);
-
 		while (true) {
 			const comp = performInstruction({
 				pc,
@@ -332,13 +370,24 @@ const useBytecodeInterpreter = (props: Props): InterpretResult => {
 				writeToOutput: props.writeToOutput,
 				isRunning: props.isRunning,
 				isPerformingAllInOne: props.isPerformingAllInOne,
+				useStdin: props.useStdin,
+				setIsWaitingForInput: props.setIsWaitingForInput,
 			});
 			if (!comp.wasSuccessful) {
+				if (comp.errorType === 'not-enough-input' && props.useStdin) {
+					props.setIsWaitingForInput(true);
+					runtimeErr.current = null;
+					runtimeErrType.current = null;
+					return;
+				}
 				runtimeErr.current = comp.error;
+				runtimeErrType.current = comp.errorType;
 				return;
 			} else {
 				runtimeErr.current = null;
+				runtimeErrType.current = null;
 			}
+			props.setIsWaitingForInput(false);
 			props.setPC(pc);
 			props.setReg0(registers[0]!);
 			props.setReg1(registers[1]!);
@@ -349,20 +398,37 @@ const useBytecodeInterpreter = (props: Props): InterpretResult => {
 
 			if (!comp.shouldContinue) return;
 		}
-	}, [props]);
+	}, [props, runtimeErr, props.program]);
 	if (parseErr.current !== null) {
+		if (parseErrType.current === null) {
+			throw new Error('parseErr and parseErrType are not in sync');
+		}
 		const e = parseErr.current;
-		return { wasSuccessful: false, elem: null, error: e ?? '' };
-	}
-	if (runtimeErr.current !== null) {
-		const e = runtimeErr.current;
 		return {
 			wasSuccessful: false,
 			elem: null,
 			error: e ?? '',
+			errorType: parseErrType.current,
+		};
+	}
+	if (runtimeErr.current !== null) {
+		const e = runtimeErr.current;
+		if (runtimeErrType.current === null) {
+			throw new Error('runtimeErr and runtimeErrType are not in sync');
+		}
+		return {
+			wasSuccessful: false,
+			elem: null,
+			error: e ?? '',
+			errorType: runtimeErrType.current,
 		};
 	}
 
-	return { wasSuccessful: true, elem: RenderState(props), error: '' };
+	return {
+		wasSuccessful: true,
+		elem: RenderState(props),
+		error: '',
+		errorType: '',
+	};
 };
 export default useBytecodeInterpreter;
