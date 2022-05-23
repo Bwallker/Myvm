@@ -189,7 +189,6 @@ const performInstruction = (args: Props): PerformInstructionResult => {
 			if (input === 6) {
 				const x = args.readFromInput();
 				if (x === undefined) {
-					console.log('Not enough input!');
 					return {
 						wasSuccessful: false,
 						error: 'The input was not long enough to satisfy the program!',
@@ -319,15 +318,6 @@ const useBytecodeInterpreter = (props: Props): void => {
 		}
 	}
 	useEffect(() => {
-		console.log('Entered useEffect');
-		console.log('program:');
-		console.log(props.program);
-		console.log(lastProgram.current);
-		console.log('input:');
-		console.log(props.fullInput);
-		console.log(lastInput.current);
-		console.log('err:');
-		console.log(props.interpretResult.current.error);
 		if (
 			!arraysEqual(lastProgram.current, props.program) ||
 			!arraysEqual(lastInput.current, props.fullInput)

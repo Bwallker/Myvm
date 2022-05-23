@@ -1,7 +1,7 @@
 import Editor, { loader, OnChange } from '@monaco-editor/react';
 import { CSSProperties, useEffect } from 'react';
-import useWindowDimensions from '../util/useWindowDimensions';
 import HelloWorld from '../../myvm_examples/hello_world';
+import useWindowDimensions from '../util/useWindowDimensions';
 
 interface Props {
 	className?: string;
@@ -120,8 +120,6 @@ const MyvmEditor = (props: Props) => {
 					blockComment: ['/*', '*/'],
 				},
 			});
-
-			console.log('Finished setting up myvm lang');
 		});
 
 		return () => void 0;
