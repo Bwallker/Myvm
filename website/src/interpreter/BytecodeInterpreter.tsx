@@ -11,6 +11,7 @@ interface Props {
 	setIsWaitingForInput: (newVal: boolean) => void;
 	writeToOutput: (newestEntry: number) => void;
 	readFromInput: () => number | undefined;
+	fullInput: number[];
 	program: number[];
 	pc: number;
 	registers: Uint8Array;
@@ -316,6 +317,8 @@ const useBytecodeInterpreter = (props: Props): InterpretResult => {
 	const runtimeErr = useRef<string | null>(null);
 	const parseErrType = useRef<InterpretErrorTypes | null>(null);
 	const runtimeErrType = useRef<PerformInstructionErrorTypes | null>(null);
+	const lastProgram = useRef<number[]>([]);
+	const lastInput = useRef<number[]>([]);
 	if (props.program.length > 255) {
 		parseErr.current =
 			'Program length must be less than 256. It was ' + props.program.length;
@@ -334,10 +337,23 @@ const useBytecodeInterpreter = (props: Props): InterpretResult => {
 		}
 	}
 	useEffect(() => {
+		if (
+			!arraysEqual(lastProgram.current, props.program) ||
+			!arraysEqual(lastInput.current, props.fullInput)
+		) {
+			runtimeErr.current = null;
+			runtimeErrType.current = null;
+		}
 		console.log('Entered useEffect');
 		console.log('program:');
-		console.log(runtimeErr.current);
 		console.log(props.program);
+		console.log(lastProgram.current);
+		console.log('input:');
+		console.log(props.fullInput);
+		console.log(lastInput.current);
+		console.log('err:');
+		console.log(runtimeErr.current);
+
 		if (!props.isPerformingAllInOne || !props.isRunning) {
 			return;
 		}
@@ -365,6 +381,7 @@ const useBytecodeInterpreter = (props: Props): InterpretResult => {
 				setReg3,
 				setReg4,
 				setReg5,
+				fullInput: props.fullInput,
 				program: props.program,
 				readFromInput: props.readFromInput,
 				writeToOutput: props.writeToOutput,
@@ -373,6 +390,8 @@ const useBytecodeInterpreter = (props: Props): InterpretResult => {
 				useStdin: props.useStdin,
 				setIsWaitingForInput: props.setIsWaitingForInput,
 			});
+			lastProgram.current = props.program;
+			lastInput.current = props.fullInput;
 			if (!comp.wasSuccessful) {
 				if (comp.errorType === 'not-enough-input' && props.useStdin) {
 					props.setIsWaitingForInput(true);
@@ -395,7 +414,6 @@ const useBytecodeInterpreter = (props: Props): InterpretResult => {
 			props.setReg3(registers[3]!);
 			props.setReg4(registers[4]!);
 			props.setReg5(registers[5]!);
-
 			if (!comp.shouldContinue) return;
 		}
 	}, [props, runtimeErr, props.program]);
@@ -430,5 +448,17 @@ const useBytecodeInterpreter = (props: Props): InterpretResult => {
 		error: '',
 		errorType: '',
 	};
+};
+
+const arraysEqual = (last: number[], now: number[]) => {
+	if (last.length !== now.length) {
+		return false;
+	}
+	for (let i = 0; i < last.length; i++) {
+		if (last[i] !== now[i]) {
+			return false;
+		}
+	}
+	return true;
 };
 export default useBytecodeInterpreter;

@@ -22,14 +22,13 @@ const Run = (props: Props) => {
 	const [isRunning, setIsRunning] = useState(false);
 	const [isPerformingAllInOne, setIsPerformingAllInOne] = useState(false);
 	const [isWaitingForInput, setIsWaitingForInput] = useState(false);
-	let program: Uint8Array, inputs: Uint8Array;
 	const programNumber = useRef<number[]>([]);
 	const inputNumber = useRef<number[]>([]);
 	const originalInputNumber = useRef<number[]>([]);
 	useMemo(() => {
 		if (props.input.wasSuccessful) {
-			program = props.input.parsed.get_program();
-			inputs = props.input.parsed.get_input();
+			const program = props.input.parsed.get_program();
+			const inputs = props.input.parsed.get_input();
 
 			programNumber.current = new Array(program.length);
 			let i = 0;
@@ -45,8 +44,6 @@ const Run = (props: Props) => {
 			}
 			originalInputNumber.current.reverse();
 		} else {
-			inputs = new Uint8Array();
-			program = new Uint8Array();
 			programNumber.current = [];
 			inputNumber.current = [];
 		}
@@ -65,10 +62,9 @@ const Run = (props: Props) => {
 		setIsWaitingForInput,
 		useStdin,
 		writeToOutput: (x) => (output.current += String.fromCharCode(x)),
+		fullInput: inputNumber.current,
 		readFromInput: () => {
 			if (!useStdin) {
-				console.log('Input number:');
-				console.dir(inputNumber.current);
 				return inputNumber.current.pop();
 			} else {
 				const ret = bufferedStdin.charCodeAt(0);
