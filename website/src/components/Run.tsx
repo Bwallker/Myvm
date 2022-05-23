@@ -1,11 +1,42 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import useBytecodeInterpreter from '../interpreter/BytecodeInterpreter';
-import { ParseResult } from './Assemble';
 import { Button } from 'react-bootstrap';
+import useBytecodeInterpreter, {
+	InterpretResult,
+	PerformInstructionResult,
+} from '../interpreter/BytecodeInterpreter';
+import { ParseResult } from './Assemble';
 
 interface Props {
 	input: ParseResult;
 }
+
+interface RenderStateProps {
+	registers: Uint8Array;
+	pc: number;
+}
+
+interface RegisterProps {
+	value: number;
+	name: string;
+}
+
+const Register = (props: RegisterProps) => (
+	<div>
+		<h1>{props.name}</h1>
+		<p>{props.value}</p>
+	</div>
+);
+export const RenderState = (props: RenderStateProps) => (
+	<div>
+		<Register value={props.registers[0]!} name='Reg0' />
+		<Register value={props.registers[1]!} name='Reg1' />
+		<Register value={props.registers[2]!} name='Reg2' />
+		<Register value={props.registers[3]!} name='Reg3' />
+		<Register value={props.registers[4]!} name='Reg4' />
+		<Register value={props.registers[5]!} name='Reg5' />
+		<Register value={props.pc} name='PC' />
+	</div>
+);
 
 const Run = (props: Props) => {
 	const [reg0, setReg0] = useState(0);
@@ -25,6 +56,19 @@ const Run = (props: Props) => {
 	const programNumber = useRef<number[]>([]);
 	const inputNumber = useRef<number[]>([]);
 	const originalInputNumber = useRef<number[]>([]);
+	const interpretResult = useRef<InterpretResult>({
+		error: '',
+		errorType: '',
+		wasSuccessful: true,
+		elem: RenderState({ registers: new Uint8Array([0, 0, 0, 0, 0, 0]), pc: 0 }),
+	});
+	const performInstructionResult = useRef<PerformInstructionResult>({
+		error: '',
+		errorType: '',
+		wasSuccessful: true,
+		elem: RenderState({ registers: new Uint8Array([0, 0, 0, 0, 0, 0]), pc: 0 }),
+		shouldContinue: true,
+	});
 	useMemo(() => {
 		if (props.input.wasSuccessful) {
 			const program = props.input.parsed.get_program();
@@ -51,7 +95,7 @@ const Run = (props: Props) => {
 
 	inputNumber.current = [...originalInputNumber.current];
 
-	const res = useBytecodeInterpreter({
+	useBytecodeInterpreter({
 		setReg0,
 		setReg1,
 		setReg2,
@@ -63,6 +107,8 @@ const Run = (props: Props) => {
 		useStdin,
 		writeToOutput: (x) => (output.current += String.fromCharCode(x)),
 		fullInput: inputNumber.current,
+		interpretResult,
+		performInstructionResult,
 		readFromInput: () => {
 			if (!useStdin) {
 				return inputNumber.current.pop();
@@ -79,15 +125,25 @@ const Run = (props: Props) => {
 		program: programNumber.current,
 		pc,
 		registers: new Uint8Array([reg0, reg1, reg2, reg3, reg4, reg5]),
-		isRunning: isRunning,
-		isPerformingAllInOne: isPerformingAllInOne,
+		isRunning,
+		isPerformingAllInOne,
 	});
-
 	useEffect(() => {
-		if (res.errorType === 'not-enough-input' && useStdin) {
+		if (
+			performInstructionResult.current.errorType === 'not-enough-input' &&
+			useStdin
+		) {
 			inputNumber.current = [...originalInputNumber.current];
 		}
-	}, [res.errorType, originalInputNumber, useStdin]);
+		if (
+			!performInstructionResult.current.wasSuccessful ||
+			!interpretResult.current.wasSuccessful
+		) {
+			setIsRunning(false);
+			setIsPerformingAllInOne(false);
+		}
+	}, [performInstructionResult, interpretResult, useStdin]);
+
 	if (!props.input.wasSuccessful) {
 		return (
 			<div>
@@ -98,15 +154,21 @@ const Run = (props: Props) => {
 	}
 
 	if (
-		!res.wasSuccessful &&
-		(!useStdin || res.errorType !== 'not-enough-input')
+		(!performInstructionResult.current.wasSuccessful ||
+			!interpretResult.current.wasSuccessful) &&
+		(!useStdin ||
+			performInstructionResult.current.errorType !== 'not-enough-input')
 	) {
 		return (
 			<div>
 				<h1>Error:</h1>
 				<br />
 				<br />
-				<p>{res.error}</p>
+				<p>
+					{!interpretResult.current.wasSuccessful
+						? interpretResult.current.error
+						: performInstructionResult.current.error}
+				</p>
 			</div>
 		);
 	}
@@ -146,7 +208,10 @@ const Run = (props: Props) => {
 			>
 				Step
 			</Button>
-			{res.elem}
+			{RenderState({
+				registers: new Uint8Array([reg0, reg1, reg2, reg3, reg4, reg5]),
+				pc,
+			})}
 			<p>{isWaitingForInput ? 'Waiting for input!' : ''}</p>
 			<label htmlFor='use-stdin'>Use stdin?</label>
 			<input
