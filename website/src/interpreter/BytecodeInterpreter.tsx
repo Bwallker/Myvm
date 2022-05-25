@@ -405,14 +405,14 @@ const useBytecodeInterpreter = (props: Props): void => {
 };
 
 const arraysEqual = (last: number[], now: number[]) => {
-	if (last.length !== now.length) {
-		return false;
-	}
-	for (let i = 0; i < last.length; i++) {
-		if (last[i] !== now[i]) {
-			return false;
-		}
-	}
-	return true;
+    if (last.length !== now.length) {
+        return false;
+    }
+    for (let i = 0; i < last.length; i++) {
+        if (last[i] !== now[i]) {
+            return false;
+        }
+    }
+    return true;
 };
 export default useBytecodeInterpreter;
