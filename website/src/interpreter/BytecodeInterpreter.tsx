@@ -307,11 +307,6 @@ const useBytecodeInterpreter = (props: Props): void => {
 		}
 	}
 	useEffect(() => {
-		console.log('Entered useEffect with the following values:');
-		console.log('Perform instruction result:');
-		console.dir(performInstructionResult.current);
-		console.log('Interpret result:');
-		console.dir(interpretResult.current);
 		if (
 			!arraysEqual(lastProgram.current, props.program) ||
 			!arraysEqual(lastInput.current, props.fullInput)
