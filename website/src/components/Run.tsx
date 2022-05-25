@@ -56,19 +56,18 @@ const Run = (props: Props) => {
 	const programNumber = useRef<number[]>([]);
 	const inputNumber = useRef<number[]>([]);
 	const originalInputNumber = useRef<number[]>([]);
-	const interpretResult = useRef<InterpretResult>({
+	const [interpretResult, setInterpretResult] = useState<InterpretResult>({
 		error: '',
 		errorType: '',
 		wasSuccessful: true,
-		elem: RenderState({ registers: new Uint8Array([0, 0, 0, 0, 0, 0]), pc: 0 }),
 	});
-	const performInstructionResult = useRef<PerformInstructionResult>({
-		error: '',
-		errorType: '',
-		wasSuccessful: true,
-		elem: RenderState({ registers: new Uint8Array([0, 0, 0, 0, 0, 0]), pc: 0 }),
-		shouldContinue: true,
-	});
+	const [performInstructionResult, setPerformInstructionResult] =
+		useState<PerformInstructionResult>({
+			error: '',
+			errorType: '',
+			wasSuccessful: true,
+			shouldContinue: true,
+		});
 	useMemo(() => {
 		if (props.input.wasSuccessful) {
 			const program = props.input.parsed.get_program();
@@ -108,7 +107,9 @@ const Run = (props: Props) => {
 		writeToOutput: (x) => (output.current += String.fromCharCode(x)),
 		fullInput: inputNumber.current,
 		interpretResult,
+		setInterpretResult,
 		performInstructionResult,
+		setPerformInstructionResult,
 		readFromInput: () => {
 			if (!useStdin) {
 				return inputNumber.current.pop();
@@ -129,15 +130,12 @@ const Run = (props: Props) => {
 		isPerformingAllInOne,
 	});
 	useEffect(() => {
-		if (
-			performInstructionResult.current.errorType === 'not-enough-input' &&
-			useStdin
-		) {
+		if (performInstructionResult.errorType === 'not-enough-input' && useStdin) {
 			inputNumber.current = [...originalInputNumber.current];
 		}
 		if (
-			!performInstructionResult.current.wasSuccessful ||
-			!interpretResult.current.wasSuccessful
+			!performInstructionResult.wasSuccessful ||
+			!interpretResult.wasSuccessful
 		) {
 			setIsRunning(false);
 			setIsPerformingAllInOne(false);
@@ -154,10 +152,9 @@ const Run = (props: Props) => {
 	}
 
 	if (
-		(!performInstructionResult.current.wasSuccessful ||
-			!interpretResult.current.wasSuccessful) &&
-		(!useStdin ||
-			performInstructionResult.current.errorType !== 'not-enough-input')
+		(!performInstructionResult.wasSuccessful ||
+			!interpretResult.wasSuccessful) &&
+		(!useStdin || performInstructionResult.errorType !== 'not-enough-input')
 	) {
 		return (
 			<div>
@@ -165,9 +162,9 @@ const Run = (props: Props) => {
 				<br />
 				<br />
 				<p>
-					{!interpretResult.current.wasSuccessful
-						? interpretResult.current.error
-						: performInstructionResult.current.error}
+					{!interpretResult.wasSuccessful
+						? interpretResult.error
+						: performInstructionResult.error}
 				</p>
 			</div>
 		);

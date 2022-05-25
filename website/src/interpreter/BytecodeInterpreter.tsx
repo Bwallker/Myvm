@@ -1,5 +1,5 @@
-import { MutableRefObject, useEffect, useRef } from 'react';
-import { RenderState } from '../components/Run';
+import { useEffect, useRef } from 'react';
+import { isEqual } from 'lodash';
 
 interface Props {
 	setReg0: (newVal: number) => void;
@@ -19,20 +19,20 @@ interface Props {
 	isRunning: boolean;
 	isPerformingAllInOne: boolean;
 	useStdin: boolean;
-	interpretResult: MutableRefObject<InterpretResult>;
-	performInstructionResult: MutableRefObject<PerformInstructionResult>;
+	interpretResult: InterpretResult;
+	setInterpretResult: (newVal: InterpretResult) => void;
+	performInstructionResult: PerformInstructionResult;
+	setPerformInstructionResult: (newVal: PerformInstructionResult) => void;
 }
 
 interface InterpretOk {
 	error: '';
-	elem: JSX.Element;
 	wasSuccessful: true;
 	errorType: '';
 }
 
 interface InterpretErr {
 	error: string;
-	elem: null;
 	wasSuccessful: false;
 	errorType: InterpretErrorTypes;
 }
@@ -77,7 +77,6 @@ const performInstruction = (args: Props): PerformInstructionResult => {
 				args.registers.length +
 				' registers.',
 			shouldContinue: false,
-			elem: null,
 			errorType: 'wrong-register-amount',
 		};
 	}
@@ -87,7 +86,6 @@ const performInstruction = (args: Props): PerformInstructionResult => {
 			wasSuccessful: true,
 			error: '',
 			shouldContinue: false,
-			elem: RenderState(args),
 			errorType: '',
 		};
 	}
@@ -100,7 +98,6 @@ const performInstruction = (args: Props): PerformInstructionResult => {
 				wasSuccessful: true,
 				error: '',
 				shouldContinue: true,
-				elem: RenderState(args),
 				errorType: '',
 			};
 		}
@@ -112,7 +109,6 @@ const performInstruction = (args: Props): PerformInstructionResult => {
 						'Bad conditional instruction! Middle three bits were not zeroed! Instruction occurred at pc ' +
 						args.pc,
 					shouldContinue: false,
-					elem: null,
 					errorType: 'invalid-conditional',
 				};
 			}
@@ -147,7 +143,6 @@ const performInstruction = (args: Props): PerformInstructionResult => {
 						wasSuccessful: false,
 						error: 'Conditional unreachable',
 						shouldContinue: false,
-						elem: null,
 						errorType: 'conditional-unreachable',
 					};
 			}
@@ -160,7 +155,6 @@ const performInstruction = (args: Props): PerformInstructionResult => {
 				wasSuccessful: true,
 				error: '',
 				shouldContinue: true,
-				elem: RenderState(args),
 				errorType: '',
 			};
 		}
@@ -172,7 +166,6 @@ const performInstruction = (args: Props): PerformInstructionResult => {
 					wasSuccessful: false,
 					error: '7 is not a valid input for a move instruction!',
 					shouldContinue: false,
-					elem: null,
 					errorType: 'invalid-move-from',
 				};
 			}
@@ -181,7 +174,6 @@ const performInstruction = (args: Props): PerformInstructionResult => {
 					wasSuccessful: false,
 					error: '7 is not a valid output for a move instruction!',
 					shouldContinue: false,
-					elem: null,
 					errorType: 'invalid-move-to',
 				};
 			}
@@ -193,7 +185,6 @@ const performInstruction = (args: Props): PerformInstructionResult => {
 						wasSuccessful: false,
 						error: 'The input was not long enough to satisfy the program!',
 						shouldContinue: false,
-						elem: null,
 						errorType: 'not-enough-input',
 					};
 				}
@@ -212,7 +203,6 @@ const performInstruction = (args: Props): PerformInstructionResult => {
 				wasSuccessful: true,
 				error: '',
 				shouldContinue: true,
-				elem: RenderState(args),
 				errorType: '',
 			};
 		}
@@ -224,7 +214,6 @@ const performInstruction = (args: Props): PerformInstructionResult => {
 						'Bad arithmetic instruction! Middle three bits were not zeroed! Instruction occurred at pc ' +
 						args.pc,
 					shouldContinue: false,
-					elem: null,
 					errorType: 'invalid-arithmetic',
 				};
 			}
@@ -261,7 +250,6 @@ const performInstruction = (args: Props): PerformInstructionResult => {
 						wasSuccessful: false,
 						error: 'Arithmetic unreachable!',
 						shouldContinue: false,
-						elem: null,
 						errorType: 'arithmetic-unreachable',
 					};
 			}
@@ -275,7 +263,6 @@ const performInstruction = (args: Props): PerformInstructionResult => {
 				wasSuccessful: true,
 				error: '',
 				shouldContinue: true,
-				elem: RenderState(args),
 				errorType: '',
 			};
 		}
@@ -286,7 +273,6 @@ const performInstruction = (args: Props): PerformInstructionResult => {
 				error:
 					'Unreachable! instruction must always start with 0b00, 0b01, 0b10 or 0b11',
 				shouldContinue: false,
-				elem: null,
 				errorType: 'prefix-unreachable',
 			};
 	}
@@ -295,13 +281,15 @@ const performInstruction = (args: Props): PerformInstructionResult => {
 const useBytecodeInterpreter = (props: Props): void => {
 	const lastProgram = useRef<number[]>([]);
 	const lastInput = useRef<number[]>([]);
-
+	const interpretResult = useRef(props.interpretResult);
+	const performInstructionResult = useRef(props.performInstructionResult);
 	if (props.program.length > 255) {
-		props.interpretResult.current.error =
-			'Program length must be less than 256. It was ' + props.program.length;
-		props.interpretResult.current.errorType = 'program-is-too-long';
-		props.interpretResult.current.wasSuccessful = false;
-		props.interpretResult.current.elem = null;
+		interpretResult.current = {
+			error:
+				'Program length must be less than 256. It was ' + props.program.length,
+			errorType: 'program-is-too-long',
+			wasSuccessful: false,
+		};
 	}
 	for (const instruction of props.program) {
 		if (
@@ -309,30 +297,41 @@ const useBytecodeInterpreter = (props: Props): void => {
 			instruction < 0 ||
 			instruction > 255
 		) {
-			props.interpretResult.current.error =
-				'Every instruction in your program must be an integer between 0 and 255. One instruction was ' +
-				instruction;
-			props.interpretResult.current.errorType = 'instruction-not-u8';
-			props.interpretResult.current.wasSuccessful = false;
-			props.interpretResult.current.elem = null;
+			interpretResult.current = {
+				error:
+					'Every instruction in your program must be an integer between 0 and 255. One instruction was ' +
+					instruction,
+				errorType: 'instruction-not-u8',
+				wasSuccessful: false,
+			};
 		}
 	}
 	useEffect(() => {
+		console.log('Entered useEffect with the following values:');
+		console.log('Perform instruction result:');
+		console.dir(performInstructionResult.current);
+		console.log('Interpret result:');
+		console.dir(interpretResult.current);
 		if (
 			!arraysEqual(lastProgram.current, props.program) ||
 			!arraysEqual(lastInput.current, props.fullInput)
 		) {
-			props.performInstructionResult.current.error = '';
-			props.performInstructionResult.current.errorType = '';
-			props.performInstructionResult.current.elem = RenderState(props);
-			props.performInstructionResult.current.wasSuccessful = true;
+			performInstructionResult.current = {
+				error: '',
+				errorType: '',
+				wasSuccessful: true,
+				shouldContinue: props.performInstructionResult.shouldContinue,
+			};
 		}
+		let doEnter;
 		if (
 			!props.isRunning ||
 			!props.isPerformingAllInOne ||
-			props.interpretResult.current.errorType !== ''
+			props.interpretResult.errorType !== ''
 		) {
-			return;
+			doEnter = false;
+		} else {
+			doEnter = true;
 		}
 
 		const registers = new Uint8Array(6);
@@ -348,7 +347,8 @@ const useBytecodeInterpreter = (props: Props): void => {
 
 		let pc = 0;
 		const setPC = (newVal: number) => (pc = newVal);
-		while (true) {
+		// eslint-disable-next-line no-unmodified-loop-condition
+		while (doEnter) {
 			const comp = performInstruction({
 				pc,
 				setPC,
@@ -369,6 +369,8 @@ const useBytecodeInterpreter = (props: Props): void => {
 				setIsWaitingForInput: props.setIsWaitingForInput,
 				interpretResult: props.interpretResult,
 				performInstructionResult: props.performInstructionResult,
+				setInterpretResult: props.setInterpretResult,
+				setPerformInstructionResult: props.setPerformInstructionResult,
 			});
 			lastProgram.current = props.program;
 			lastInput.current = props.fullInput;
@@ -376,20 +378,22 @@ const useBytecodeInterpreter = (props: Props): void => {
 				if (comp.errorType === 'not-enough-input' && props.useStdin) {
 					props.setIsWaitingForInput(true);
 				} else {
-					props.performInstructionResult.current.error = comp.error;
-					props.performInstructionResult.current.errorType = comp.errorType;
-					props.performInstructionResult.current.elem = null;
-					props.performInstructionResult.current.wasSuccessful = false;
-					props.performInstructionResult.current.shouldContinue = false;
-					return;
+					performInstructionResult.current = {
+						error: comp.error,
+						errorType: comp.errorType,
+						shouldContinue: false,
+						wasSuccessful: false,
+					};
+					break;
 				}
 			}
-			props.performInstructionResult.current.error = '';
-			props.performInstructionResult.current.errorType = '';
-			props.performInstructionResult.current.elem = RenderState(props);
-			props.performInstructionResult.current.wasSuccessful = true;
-			props.performInstructionResult.current.shouldContinue =
-				comp.shouldContinue;
+
+			performInstructionResult.current = {
+				error: '',
+				errorType: '',
+				wasSuccessful: true,
+				shouldContinue: comp.shouldContinue,
+			};
 
 			props.setIsWaitingForInput(false);
 			props.setPC(pc);
@@ -399,20 +403,28 @@ const useBytecodeInterpreter = (props: Props): void => {
 			props.setReg3(registers[3]!);
 			props.setReg4(registers[4]!);
 			props.setReg5(registers[5]!);
-			if (!comp.shouldContinue) return;
+			if (!comp.shouldContinue) break;
 		}
-	}, [props, props.performInstructionResult, props.program]);
+		if (!isEqual(interpretResult.current, props.interpretResult)) {
+			props.setInterpretResult(interpretResult.current);
+		}
+		if (
+			!isEqual(performInstructionResult.current, props.performInstructionResult)
+		) {
+			props.setPerformInstructionResult(performInstructionResult.current);
+		}
+	}, [props]);
 };
 
 const arraysEqual = (last: number[], now: number[]) => {
-    if (last.length !== now.length) {
-        return false;
-    }
-    for (let i = 0; i < last.length; i++) {
-        if (last[i] !== now[i]) {
-            return false;
-        }
-    }
-    return true;
+	if (last.length !== now.length) {
+		return false;
+	}
+	for (let i = 0; i < last.length; i++) {
+		if (last[i] !== now[i]) {
+			return false;
+		}
+	}
+	return true;
 };
 export default useBytecodeInterpreter;
