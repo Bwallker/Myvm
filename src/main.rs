@@ -168,7 +168,6 @@ fn handle_program(program_path: PathBuf) -> Result<Vec<u8>> {
 }
 
 fn handle_source(source_path: PathBuf) -> Result<String> {
-    println!("{source_path:?}");
     let mut source_file = match File::open(source_path) {
         Ok(v) => v,
         Err(e) => {

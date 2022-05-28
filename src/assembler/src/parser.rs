@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
 use bytecode_interpreter::run::{
-    Arithmetic, Conditional, FromStore, ToStore, ARITHMETIC_PREFIX, CONDITIONAL_PREFIX,
-    LITERAL_PREFIX, MOVE_PREFIX,
+    Arithmetic, ARITHMETIC_PREFIX, Conditional, CONDITIONAL_PREFIX, FromStore, LITERAL_PREFIX,
+    MOVE_PREFIX, ToStore,
 };
 use color_eyre::eyre::eyre;
 use color_eyre::Result;
@@ -12,232 +12,232 @@ use crate::lexer::lex;
 use crate::lexer::Rule;
 use crate::preprocessor::preprocess;
 
+
 #[derive(Debug)]
 pub struct SuccessfulParse {
-    pub(crate) input: Vec<u8>,
-    pub(crate) program: Vec<u8>,
-    pub(crate) expanded: String,
+	pub(crate) input: Vec<u8>,
+	pub(crate) program: Vec<u8>,
+	pub(crate) expanded: String,
 }
+
 
 impl SuccessfulParse {
-    pub fn from(input: Vec<u8>, program: Vec<u8>, expanded: String) -> Self {
-        Self {
-            input,
-            program,
-            expanded,
-        }
-    }
-    #[allow(dead_code)]
-    pub fn into_raw_parts(self) -> (Vec<u8>, Vec<u8>, String) {
-        (self.input, self.program, self.expanded)
-    }
+	pub fn from(input: Vec<u8>, program: Vec<u8>, expanded: String) -> Self {
+		Self {
+			input,
+			program,
+			expanded,
+		}
+	}
+	#[allow(dead_code)]
+	pub fn into_raw_parts(self) -> (Vec<u8>, Vec<u8>, String) {
+		(self.input, self.program, self.expanded)
+	}
 }
 
+
 pub fn parse(program: &str) -> Result<SuccessfulParse> {
-    let program = preprocess(program)?;
-    let file: Pair<Rule> = lex(&program)?;
-    let mut instructions = Vec::new();
-    let tree = file.into_inner();
-    let (input, mut tree) = parse_input(tree);
-    let mut actions = tree.next().unwrap().into_inner();
-    let start_of_program = actions.next().unwrap();
-    assert_eq!(start_of_program.as_rule(), Rule::start_of_program);
-    let label_positions = find_labels(actions.clone());
-    for node in actions {
-        match node.as_rule() {
-            Rule::action => {
-                let node = node.into_inner().next().unwrap();
-                match node.as_rule() {
-                    Rule::instruction => {
-                        let parsed = parse_instruction(node.into_inner().next().unwrap());
-                        instructions.push(parsed);
-                    }
-                    Rule::label => (),
-                    Rule::macro_call => (),
-                    Rule::full_macro => (),
-                    Rule::empty => (),
-                    Rule::constant => (),
-                    Rule::use_label_or_const => {
-                        let val = label_positions.get(node.as_str().trim());
-                        if val == None {
-                            return Err(eyre!("Unknown identifier: {}", node.as_str().trim()));
-                        }
-                        let val = *val.unwrap();
-                        if val > 63 {
-                            return Err(eyre!("You tried to use a label with a value greater than 63 which is not supported."));
-                        }
-                        instructions.push((LITERAL_PREFIX << 6) | val);
-                    }
-                    _ => unreachable!(),
-                }
-            }
-            Rule::EOI => (),
-            _ => unreachable!(),
-        }
-    }
-    Ok(SuccessfulParse::from(input, instructions, program))
+	let program = preprocess(program)?;
+	let file: Pair<Rule> = lex(&program)?;
+	let mut instructions = Vec::new();
+	let tree = file.into_inner();
+	let (input, mut tree) = parse_input(tree);
+	let mut actions = tree.next().unwrap().into_inner();
+	let start_of_program = actions.next().unwrap();
+	assert_eq!(start_of_program.as_rule(), Rule::start_of_program);
+	let label_positions = find_labels(actions.clone());
+	for node in actions {
+		match node.as_rule() {
+			Rule::action => {
+				let node = node.into_inner().next().unwrap();
+				match node.as_rule() {
+					Rule::instruction => {
+						let parsed = parse_instruction(node.into_inner().next().unwrap());
+						instructions.push(parsed);
+					}
+					Rule::label => (),
+					Rule::macro_call => (),
+					Rule::full_macro => (),
+					Rule::empty => (),
+					Rule::constant => (),
+					Rule::use_label_or_const => {
+						let val = label_positions.get(node.as_str().trim());
+						if val == None {
+							return Err(eyre!("Unknown identifier: {}", node.as_str().trim()));
+						}
+						let val = *val.unwrap();
+						if val > 63 {
+							return Err(eyre!("You tried to use a label with a value greater than 63 which is not supported."));
+						}
+						instructions.push((LITERAL_PREFIX << 6) | val);
+					}
+					_ => unreachable!(),
+				}
+			}
+			Rule::EOI => (),
+			_ => unreachable!(),
+		}
+	}
+	Ok(SuccessfulParse::from(input, instructions, program))
 }
+
 
 type LabelPositions<'a> = HashMap<&'a str, u8>;
 
+
 fn find_labels(tree: Pairs<Rule>) -> LabelPositions {
-    let mut positions = HashMap::new();
-    let mut number_of_instructions = 0;
-    for node in tree {
-        match node.as_rule() {
-            Rule::action => {
-                let node = node.into_inner().next().unwrap();
-                match node.as_rule() {
-                    Rule::label => {
-                        let ident = node.into_inner().next().unwrap();
-                        let as_str = ident.as_str().trim();
-                        positions.insert(as_str, number_of_instructions);
-                    }
-                    Rule::instruction => number_of_instructions += 1,
-                    Rule::use_label_or_const => number_of_instructions += 1,
-                    Rule::macro_call => (),
-                    Rule::full_macro => (),
-                    Rule::empty => (),
-                    Rule::constant => (),
-                    _ => unreachable!(),
-                }
-            }
-            Rule::EOI => (),
-            _ => {
-                println!("{:?}", node.as_rule());
-                println!("BAD NODE!");
-                unreachable!()
-            }
-        }
-    }
-    positions
+	let mut positions = HashMap::new();
+	let mut number_of_instructions = 0;
+	for node in tree {
+		match node.as_rule() {
+			Rule::action => {
+				let node = node.into_inner().next().unwrap();
+				match node.as_rule() {
+					Rule::label => {
+						let ident = node.into_inner().next().unwrap();
+						let as_str = ident.as_str().trim();
+						positions.insert(as_str, number_of_instructions);
+					}
+					Rule::instruction => number_of_instructions += 1,
+					Rule::use_label_or_const => number_of_instructions += 1,
+					Rule::macro_call => (),
+					Rule::full_macro => (),
+					Rule::empty => (),
+					Rule::constant => (),
+					_ => unreachable!(),
+				}
+			}
+			Rule::EOI => (),
+			_ => {
+				unreachable!()
+			}
+		}
+	}
+	positions
 }
+
 
 fn parse_input(mut tree: Pairs<Rule>) -> (Vec<u8>, Pairs<Rule>) {
-    let mut input = Vec::new();
-    if tree.peek().unwrap().as_rule() == Rule::inputs {
-        let mut inputs = tree.next().unwrap().into_inner();
-        loop {
-            let next = inputs.next();
-            if next == None {
-                break;
-            }
-            let next = next.unwrap();
-            if next.as_rule() != Rule::input_byte {
-                break;
-            }
-            let inner = next.into_inner().next().unwrap();
-            input.push(match inner.as_rule() {
-                Rule::char_input => {
-                    let as_str = inner.as_str().trim();
-                    let l = as_str.len();
-                    let contents = &as_str[1..l - 1];
-                    if contents.len() == 1 {
-                        contents.chars().next().unwrap() as u32 as u8
-                    } else if contents.len() == 2 {
-                        let mut c = contents.chars();
-                        assert_eq!(c.next().unwrap(), '\\');
-                        match c.next().unwrap() {
-                            'r' => b'\r',
-                            'n' => b'\n',
-                            't' => b'\t',
-                            '0' => b'\0',
-                            _ => unreachable!(),
-                        }
-                    } else {
-                        unreachable!()
-                    }
-                }
-                Rule::dec_input => {
-                    let as_str = inner.as_str().trim();
-                    as_str.parse::<u8>().unwrap()
-                }
-                Rule::bin_input => {
-                    let as_str = inner.as_str().trim();
-                    let without_prefix = &as_str[2..];
-                    u8::from_str_radix(without_prefix, 2).unwrap()
-                }
-                Rule::hex_input => {
-                    let as_str = inner.as_str().trim();
-                    let without_prefix = &as_str[2..];
-                    u8::from_str_radix(without_prefix, 16).unwrap()
-                }
-                _ => unreachable!(),
-            })
-        }
-    };
-    (input, tree)
+	let mut input = Vec::new();
+	if tree.peek().unwrap().as_rule() == Rule::inputs {
+		let mut inputs = tree.next().unwrap().into_inner();
+		loop {
+			let next = inputs.next();
+			if next == None {
+				break;
+			}
+			let next = next.unwrap();
+			if next.as_rule() != Rule::input_byte {
+				break;
+			}
+			let inner = next.into_inner().next().unwrap();
+			input.push(match inner.as_rule() {
+				Rule::char_input => {
+					let as_str = inner.as_str().trim();
+					let l = as_str.len();
+					let contents = &as_str[1..l - 1];
+					if contents.len() == 1 {
+						contents.chars().next().unwrap() as u32 as u8
+					} else if contents.len() == 2 {
+						let mut c = contents.chars();
+						assert_eq!(c.next().unwrap(), '\\');
+						match c.next().unwrap() {
+							'r' => b'\r',
+							'n' => b'\n',
+							't' => b'\t',
+							'0' => b'\0',
+							_ => unreachable!(),
+						}
+					} else {
+						unreachable!()
+					}
+				}
+				Rule::dec_input => {
+					let as_str = inner.as_str().trim();
+					as_str.parse::<u8>().unwrap()
+				}
+				Rule::bin_input => {
+					let as_str = inner.as_str().trim();
+					let without_prefix = &as_str[2..];
+					u8::from_str_radix(without_prefix, 2).unwrap()
+				}
+				Rule::hex_input => {
+					let as_str = inner.as_str().trim();
+					let without_prefix = &as_str[2..];
+					u8::from_str_radix(without_prefix, 16).unwrap()
+				}
+				_ => unreachable!(),
+			})
+		}
+	};
+	(input, tree)
 }
+
 
 fn parse_instruction(instruction: Pair<Rule>) -> u8 {
-    match instruction.as_rule() {
-        Rule::literal => {
-            let literal_type = instruction.into_inner().next().unwrap();
-            match literal_type.as_rule() {
-                Rule::dec_literal => {
-                    let as_str = literal_type.as_str().trim();
-                    LITERAL_PREFIX << 6 | as_str.parse::<u8>().unwrap()
-                }
-                Rule::bin_literal => {
-                    let as_str = literal_type.as_str().trim();
-                    let without_prefix = &as_str[2..];
-                    LITERAL_PREFIX << 6 | u8::from_str_radix(without_prefix, 2).unwrap()
-                }
-                Rule::hex_literal => {
-                    let as_str = literal_type.as_str().trim();
-                    let without_prefix = &as_str[2..];
-                    LITERAL_PREFIX << 6 | u8::from_str_radix(without_prefix, 16).unwrap()
-                }
-                _ => unreachable!(),
-            }
-        }
-        Rule::nop => CONDITIONAL_PREFIX << 6 | Conditional::NOP,
-        Rule::j => CONDITIONAL_PREFIX << 6 | Conditional::JMP,
-        Rule::jez => CONDITIONAL_PREFIX << 6 | Conditional::JEZ,
-        Rule::jnz => CONDITIONAL_PREFIX << 6 | Conditional::JNZ,
-        Rule::jgez => CONDITIONAL_PREFIX << 6 | Conditional::JGEZ,
-        Rule::jgz => CONDITIONAL_PREFIX << 6 | Conditional::JGZ,
-        Rule::jlez => CONDITIONAL_PREFIX << 6 | Conditional::JLEZ,
-        Rule::jlz => CONDITIONAL_PREFIX << 6 | Conditional::JLZ,
+	match instruction.as_rule() {
+		Rule::literal => {
+			let literal_type = instruction.into_inner().next().unwrap();
+			match literal_type.as_rule() {
+				Rule::dec_literal => {
+					let as_str = literal_type.as_str().trim();
+					LITERAL_PREFIX << 6 | as_str.parse::<u8>().unwrap()
+				}
+				Rule::bin_literal => {
+					let as_str = literal_type.as_str().trim();
+					let without_prefix = &as_str[2..];
+					LITERAL_PREFIX << 6 | u8::from_str_radix(without_prefix, 2).unwrap()
+				}
+				Rule::hex_literal => {
+					let as_str = literal_type.as_str().trim();
+					let without_prefix = &as_str[2..];
+					LITERAL_PREFIX << 6 | u8::from_str_radix(without_prefix, 16).unwrap()
+				}
+				_ => unreachable!(),
+			}
+		}
+		Rule::nop => CONDITIONAL_PREFIX << 6 | Conditional::NOP,
+		Rule::j => CONDITIONAL_PREFIX << 6 | Conditional::JMP,
+		Rule::jez => CONDITIONAL_PREFIX << 6 | Conditional::JEZ,
+		Rule::jnz => CONDITIONAL_PREFIX << 6 | Conditional::JNZ,
+		Rule::jgez => CONDITIONAL_PREFIX << 6 | Conditional::JGEZ,
+		Rule::jgz => CONDITIONAL_PREFIX << 6 | Conditional::JGZ,
+		Rule::jlez => CONDITIONAL_PREFIX << 6 | Conditional::JLEZ,
+		Rule::jlz => CONDITIONAL_PREFIX << 6 | Conditional::JLZ,
 
-        Rule::add => ARITHMETIC_PREFIX << 6 | Arithmetic::ADD,
-        Rule::sub => ARITHMETIC_PREFIX << 6 | Arithmetic::SUB,
-        Rule::or => ARITHMETIC_PREFIX << 6 | Arithmetic::OR,
-        Rule::nor => ARITHMETIC_PREFIX << 6 | Arithmetic::NOR,
-        Rule::xor => ARITHMETIC_PREFIX << 6 | Arithmetic::XOR,
-        Rule::xnor => ARITHMETIC_PREFIX << 6 | Arithmetic::XNOR,
-        Rule::and => ARITHMETIC_PREFIX << 6 | Arithmetic::AND,
-        Rule::nand => ARITHMETIC_PREFIX << 6 | Arithmetic::NAND,
+		Rule::add => ARITHMETIC_PREFIX << 6 | Arithmetic::ADD,
+		Rule::sub => ARITHMETIC_PREFIX << 6 | Arithmetic::SUB,
+		Rule::or => ARITHMETIC_PREFIX << 6 | Arithmetic::OR,
+		Rule::nor => ARITHMETIC_PREFIX << 6 | Arithmetic::NOR,
+		Rule::xor => ARITHMETIC_PREFIX << 6 | Arithmetic::XOR,
+		Rule::xnor => ARITHMETIC_PREFIX << 6 | Arithmetic::XNOR,
+		Rule::and => ARITHMETIC_PREFIX << 6 | Arithmetic::AND,
+		Rule::nand => ARITHMETIC_PREFIX << 6 | Arithmetic::NAND,
 
-        Rule::mov => {
-            let mut inner = instruction.into_inner();
-            let from = inner.next().unwrap().as_str().trim();
-            let to = inner.next().unwrap().as_str().trim();
-            let from_bin = if from.eq_ignore_ascii_case("input")
-                || from.eq_ignore_ascii_case("i")
-                || from.eq_ignore_ascii_case("in")
-            {
-                FromStore::IN
-            } else {
-                let from = from.strip_prefix("reg").unwrap_or(from);
-                from.parse().unwrap()
-            };
-            let to_bin = if to.eq_ignore_ascii_case("output")
-                || to.eq_ignore_ascii_case("o")
-                || to.eq_ignore_ascii_case("out")
-            {
-                ToStore::OUT
-            } else {
-                let to = to.strip_prefix("reg").unwrap_or(to);
-                to.parse().unwrap()
-            };
+		Rule::mov => {
+			let mut inner = instruction.into_inner();
+			let from = inner.next().unwrap().as_str().trim();
+			let to = inner.next().unwrap().as_str().trim();
+			let from_bin = if from.eq_ignore_ascii_case("input") || from.eq_ignore_ascii_case("i") || from.eq_ignore_ascii_case("in") {
+				FromStore::IN
+			} else {
+				let from = from.strip_prefix("reg").unwrap_or(from);
+				from.parse().unwrap()
+			};
+			let to_bin = if to.eq_ignore_ascii_case("output") || to.eq_ignore_ascii_case("o") || to.eq_ignore_ascii_case("out") {
+				ToStore::OUT
+			} else {
+				let to = to.strip_prefix("reg").unwrap_or(to);
+				to.parse().unwrap()
+			};
 
-            (MOVE_PREFIX << 6) | (from_bin << 3) | to_bin
-        }
+			(MOVE_PREFIX << 6) | (from_bin << 3) | to_bin
+		}
 
-        _ => unreachable!(),
-    }
+		_ => unreachable!(),
+	}
 }
+
 
 //add = {WHITE_SPACE* ~ ^"add" ~ end_of_line}
 // sub = {WHITE_SPACE* ~ ^"sub" ~ end_of_line}
@@ -259,15 +259,16 @@ mod tests {
 
     use super::Rule;
 
-    fn print_ast(program: &str) -> Result<()> {
-        let file: Pair<Rule> = lex(program)?;
-        println!("{:#?}", file.into_inner());
-        Ok(())
-    }
 
-    #[test]
-    fn dummy_test() -> Result<()> {
-        let s = r#"
+    fn print_ast(program: &str) -> Result<()> {
+		let file: Pair<Rule> = lex(program)?;
+		Ok(())
+	}
+
+
+	#[test]
+	fn dummy_test() -> Result<()> {
+		let s = r#"
             program:
             reset_to_zero
             j
@@ -296,10 +297,9 @@ mod tests {
             loop
             j
             "#;
-        print_ast(s)?;
-        let r = parse(s)?;
-        println!("input: {:#?}, program: {:#?}", r.input, r.program);
-        // Panic to see print output.
-        panic!()
-    }
+		print_ast(s)?;
+		let r = parse(s)?;
+		// Panic to see print output.
+		panic!()
+	}
 }
