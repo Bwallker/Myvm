@@ -48,6 +48,8 @@ const MyvmEditor = (props: Props) => {
 						[/[jJ][lL][eE][zZ](?=(|$|\s|\W))/g, 'jlez'],
 						[/[jJ][lL][zZ](?=(|$|\s|\W))/g, 'jlz'],
 
+						[/[lL][aA][bB][eE][lL][\t ]+/g, 'label'],
+
 						[/[mM][oO][vV][\t ]+/g, 'mov'],
 						[
 							/([oO][uU][tT][pP][uU][tT](?=(\s|$)))|[oO][uU][tT](?=(\s|$))|[oO](?=(\s|$))/g,
@@ -100,6 +102,8 @@ const MyvmEditor = (props: Props) => {
 					{ token: 'xnor', ...arithmeticStyling },
 					{ token: 'and', ...arithmeticStyling },
 					{ token: 'nand', ...arithmeticStyling },
+
+					{ token: 'label', foreground: 'adff2f', fontStyle: 'bold' },
 
 					{ token: 'macroArg', foreground: 'aabbcc', fontStyle: 'bold' },
 					{ token: 'macroKeyword', foreground: 'ccbbaa', fontStyle: 'bold' },
