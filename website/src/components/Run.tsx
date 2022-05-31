@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Button } from 'react-bootstrap';
 import useBytecodeInterpreter, {
 	InterpretResult,
@@ -50,7 +50,7 @@ const Run = (props: Props) => {
 	const [useStdin, setUseStdin] = useState(false);
 	const [stdin, setStdin] = useState('');
 	const [bufferedStdin, setBufferedStdin] = useState('');
-	const [isRunning, setIsRunning] = useState(false);
+	const [isStepping, setIsStepping] = useState(false);
 	const [isPerformingAllInOne, setIsPerformingAllInOne] = useState(false);
 	const [isWaitingForInput, setIsWaitingForInput] = useState(false);
 	const programNumber = useRef<number[]>([]);
@@ -93,7 +93,6 @@ const Run = (props: Props) => {
 	}, [props]);
 
 	inputNumber.current = [...originalInputNumber.current];
-
 	useBytecodeInterpreter({
 		setReg0,
 		setReg1,
@@ -102,6 +101,7 @@ const Run = (props: Props) => {
 		setReg4,
 		setReg5,
 		setPC,
+		isWaitingForInput,
 		setIsWaitingForInput,
 		useStdin,
 		writeToOutput: (x) => (output.current += String.fromCharCode(x)),
@@ -116,7 +116,7 @@ const Run = (props: Props) => {
 			} else {
 				const ret = bufferedStdin.charCodeAt(0);
 				setBufferedStdin(bufferedStdin.substring(1));
-				if (ret === undefined) {
+				if (isNaN(ret)) {
 					return undefined;
 				} else {
 					return ret;
@@ -126,22 +126,46 @@ const Run = (props: Props) => {
 		program: programNumber.current,
 		pc,
 		registers: new Uint8Array([reg0, reg1, reg2, reg3, reg4, reg5]),
-		isRunning,
+		isStepping,
+		setIsStepping,
 		isPerformingAllInOne,
 	});
-	useEffect(() => {
-		if (performInstructionResult.errorType === 'not-enough-input' && useStdin) {
-			inputNumber.current = [...originalInputNumber.current];
+	console.log('Here in Run');
+	console.log(performInstructionResult.errorType);
+	console.dir({
+		reg0,
+		reg1,
+		reg2,
+		reg3,
+		reg4,
+		reg5,
+		pc,
+		isWaitingForInput,
+		isStepping,
+		isPerformingAllInOne,
+		output,
+		useStdin,
+		stdin,
+		bufferedStdin,
+		programNumber,
+		inputNumber,
+		interpretResult,
+		performInstructionResult,
+	});
+	if (performInstructionResult.errorType === 'not-enough-input' && useStdin) {
+		inputNumber.current = [...originalInputNumber.current];
+	}
+	if (
+		!performInstructionResult.wasSuccessful ||
+		!interpretResult.wasSuccessful
+	) {
+		if (isStepping) {
+			setIsStepping(false);
 		}
-		if (
-			!performInstructionResult.wasSuccessful ||
-			!interpretResult.wasSuccessful
-		) {
-			setIsRunning(false);
+		if (isPerformingAllInOne) {
 			setIsPerformingAllInOne(false);
 		}
-	}, [performInstructionResult, interpretResult, useStdin]);
-
+	}
 	if (!props.input.wasSuccessful) {
 		return (
 			<div>
@@ -174,7 +198,7 @@ const Run = (props: Props) => {
 		<div>
 			<Button
 				onClick={() => {
-					if (isRunning) {
+					if (isPerformingAllInOne || isStepping) {
 						setPC(0);
 						setReg0(0);
 						setReg1(0);
@@ -185,22 +209,19 @@ const Run = (props: Props) => {
 						output.current = '';
 						inputNumber.current = [...originalInputNumber.current];
 					}
-					if (isPerformingAllInOne) {
-						setIsRunning(false);
-						setIsPerformingAllInOne(false);
-					} else {
-						setIsPerformingAllInOne(!isRunning);
-						setIsRunning(!isRunning);
+					if (!isStepping) {
+						setIsPerformingAllInOne(!isPerformingAllInOne);
 					}
+					setIsStepping(false);
 				}}
 			>
-				{isRunning ? 'Stop' : 'Run'}
+				{isStepping || isPerformingAllInOne ? 'Stop' : 'Run'}
 			</Button>
 			<Button
 				disabled={isPerformingAllInOne}
 				onClick={() => {
 					setIsPerformingAllInOne(false);
-					setIsRunning(true);
+					setIsStepping(true);
 				}}
 			>
 				Step

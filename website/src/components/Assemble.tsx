@@ -15,10 +15,10 @@ export interface ParseErr {
 	error: string;
 }
 
-const decimalToHex = (d: number, padding: number) => {
-	let hex = d.toString(16);
+export const decimalToHex = (int: number, padToXDigits: number) => {
+	let hex = int.toString(16);
 
-	while (hex.length < padding) {
+	while (hex.length < padToXDigits) {
 		hex = '0' + hex;
 	}
 
