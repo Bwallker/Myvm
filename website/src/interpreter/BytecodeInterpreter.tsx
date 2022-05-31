@@ -14,8 +14,6 @@ interface Props {
 	isWaitingForInput: boolean;
 	setIsWaitingForInput: Setter<boolean>;
 	writeToOutput: (_newestEntry: number) => void;
-	output: string;
-	setOutput: Setter<string>;
 	readFromInput: () => number | undefined;
 	fullInput: number[];
 	program: number[];
@@ -58,7 +56,8 @@ export type PerformInstructionErrorTypes =
 	| 'invalid-move-to'
 	| 'not-enough-input'
 	| 'prefix-unreachable'
-	| 'ran-out-of-instructions';
+	| 'ran-out-of-instructions'
+	| 'invalid-utf8-lexeme';
 export type InterpretResult = InterpretOk | InterpretErr;
 
 interface PerformInstructionOk extends InterpretOk {
@@ -264,7 +263,7 @@ const performInstruction = (args: Props): PerformInstructionResult => {
 			if (res < 0) {
 				res += 256;
 			}
-			res %= 255;
+			res %= 256;
 			args.setReg3(res);
 			args.setPC(args.pc + 1);
 			return {
@@ -291,6 +290,7 @@ const usePerformInstruction = (props: Props): void => {
 	const lastInput = useRef<number[]>([]);
 	const interpretResult = useRef(props.interpretResult);
 	const performInstructionResult = useRef(props.performInstructionResult);
+	const bufferedOutput = useRef([] as number[]);
 	useEffect(() => {
 		if (props.program.length > 255) {
 			interpretResult.current = {
@@ -348,7 +348,6 @@ const usePerformInstruction = (props: Props): void => {
 
 		let pc = props.pc;
 		const setPC = (newVal: number) => (pc = newVal);
-		let bufferedOutput = '' + props.output;
 		// eslint-disable-next-line no-unmodified-loop-condition
 		while (doEnter) {
 			const comp = performInstruction({
@@ -361,12 +360,10 @@ const usePerformInstruction = (props: Props): void => {
 				setReg3,
 				setReg4,
 				setReg5,
-				output: props.output,
-				setOutput: props.setOutput,
 				fullInput: props.fullInput,
 				program: props.program,
 				readFromInput: props.readFromInput,
-				writeToOutput: (x) => (bufferedOutput += String.fromCharCode(x)),
+				writeToOutput: (x) => bufferedOutput.current.push(x),
 				isPerformingAllInOne: props.isPerformingAllInOne,
 				useStdin: props.useStdin,
 				isWaitingForInput: props.isWaitingForInput,
@@ -381,6 +378,7 @@ const usePerformInstruction = (props: Props): void => {
 			lastProgram.current = props.program;
 			lastInput.current = props.fullInput;
 			if (!comp.wasSuccessful) {
+				bufferedOutput.current = [];
 				if (comp.errorType === 'not-enough-input' && props.useStdin) {
 					props.setIsWaitingForInput(true);
 					performInstructionResult.current = {
@@ -424,7 +422,39 @@ const usePerformInstruction = (props: Props): void => {
 				props.setReg4(registers[4]!);
 				props.setReg5(registers[5]!);
 				props.setIsStepping(false);
-				props.setOutput(bufferedOutput);
+				const output = document.getElementById('output')!;
+				const encoder = new TextEncoder();
+				const encoded = encoder.encode(output.innerText);
+				const encodedNum = [...encoded];
+				switch (true) {
+					case bufferedOutput.current.length === 1 &&
+						(bufferedOutput.current[0]! & 0b10_00_00_00) === 0b00_00_00_00:
+					case bufferedOutput.current.length === 2 &&
+						(bufferedOutput.current[0]! & 0b111_00000) === 0b110_00000:
+					case bufferedOutput.current.length === 3 &&
+						(bufferedOutput.current[0]! & 0b1111_0000) === 0b1110_0000:
+					case bufferedOutput.current.length === 4 &&
+						(bufferedOutput.current[0]! & 0b11111_000) === 0b11110_000: {
+						encodedNum.push(...bufferedOutput.current);
+						const decoder = new TextDecoder();
+						const asStr = decoder.decode(new Uint8Array(encodedNum));
+						output.innerText = asStr;
+						break;
+					}
+					case bufferedOutput.current.length >= 4: {
+						props.setPerformInstructionResult({
+							error:
+								'Invalid utf8 codepoint sequence tried to be printed to stdout.',
+							errorType: 'invalid-utf8-lexeme',
+							wasSuccessful: false,
+							shouldContinue: false,
+						});
+						output.innerText = '';
+						break;
+					}
+					default:
+						break;
+				}
 			}
 			break;
 		}

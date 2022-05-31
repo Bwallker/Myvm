@@ -7,13 +7,20 @@ import { Tab, TabList, TabPanel, Tabs } from 'react-tabs';
 import Run from '../components/Run';
 import UseWasm from '../util/UseWasm';
 import Docs from '../components/Docs';
+import Head from 'next/head';
 
 const Home: NextPage = () => {
+	const decoder = new TextDecoder();
+	decoder.decode(new Uint8Array([1, 2, 3, 4, 5]));
 	// @ts-ignore
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	const [contents, setContents] = useState(HelloWorld);
 	return (
 		<div className='row row-cols-2'>
+			<Head>
+				<title>My VM</title>
+				<meta charSet='utf-8' />
+			</Head>
 			{
 				<MyvmEditor
 					className='w-100 h-100'

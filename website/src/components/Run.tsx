@@ -46,7 +46,6 @@ const Run = (props: Props) => {
 	const [reg4, setReg4] = useState(0);
 	const [reg5, setReg5] = useState(0);
 	const [pc, setPC] = useState(0);
-	const [output, setOutput] = useState('');
 	const [useStdin, setUseStdin] = useState(false);
 	const [stdin, setStdin] = useState('');
 	const [bufferedStdin, setBufferedStdin] = useState('');
@@ -61,6 +60,7 @@ const Run = (props: Props) => {
 		errorType: '',
 		wasSuccessful: true,
 	});
+	const output = document.getElementById('output')!;
 	const [performInstructionResult, setPerformInstructionResult] =
 		useState<PerformInstructionResult>({
 			error: '',
@@ -101,8 +101,6 @@ const Run = (props: Props) => {
 		setReg5,
 		setPC,
 		isWaitingForInput,
-		output,
-		setOutput,
 		writeToOutput: (_d) => void 0,
 		setIsWaitingForInput,
 		useStdin,
@@ -187,7 +185,7 @@ const Run = (props: Props) => {
 						setReg3(0);
 						setReg4(0);
 						setReg5(0);
-						setOutput('');
+						output.innerText = '';
 						inputNumber.current = [...originalInputNumber.current];
 					}
 					if (!isStepping) {
@@ -236,11 +234,8 @@ const Run = (props: Props) => {
 			>
 				Submit stdin:
 			</Button>
-			<p>
-				Output:
-				<br />
-				{output}
-			</p>
+			<p>Output:</p>
+			<p id='output'></p>
 		</div>
 	);
 };
