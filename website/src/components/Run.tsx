@@ -130,28 +130,6 @@ const Run = (props: Props) => {
 		setIsStepping,
 		isPerformingAllInOne,
 	});
-	console.log('Here in Run');
-	console.log(performInstructionResult.errorType);
-	console.dir({
-		reg0,
-		reg1,
-		reg2,
-		reg3,
-		reg4,
-		reg5,
-		pc,
-		isWaitingForInput,
-		isStepping,
-		isPerformingAllInOne,
-		output,
-		useStdin,
-		stdin,
-		bufferedStdin,
-		programNumber,
-		inputNumber,
-		interpretResult,
-		performInstructionResult,
-	});
 	if (performInstructionResult.errorType === 'not-enough-input' && useStdin) {
 		inputNumber.current = [...originalInputNumber.current];
 	}
