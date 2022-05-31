@@ -7,9 +7,9 @@ edition = "2021"
 opt-level = "s"
 strip = true
 debug = 0
-dedub-assertion = false
+debug-assertions = false
 overflow-checks = false
-codegen-units = 1
+codegen-units = 256
 lto = true
 
 [lib]

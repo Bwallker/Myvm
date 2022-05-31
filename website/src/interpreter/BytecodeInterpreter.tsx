@@ -13,7 +13,9 @@ interface Props {
 	setPC: Setter<number>;
 	isWaitingForInput: boolean;
 	setIsWaitingForInput: Setter<boolean>;
-	writeToOutput: (newestEntry: number) => void;
+	writeToOutput: (_newestEntry: number) => void;
+	output: string;
+	setOutput: Setter<string>;
 	readFromInput: () => number | undefined;
 	fullInput: number[];
 	program: number[];
@@ -346,6 +348,7 @@ const usePerformInstruction = (props: Props): void => {
 
 		let pc = props.pc;
 		const setPC = (newVal: number) => (pc = newVal);
+		let bufferedOutput = '' + props.output;
 		// eslint-disable-next-line no-unmodified-loop-condition
 		while (doEnter) {
 			const comp = performInstruction({
@@ -358,10 +361,12 @@ const usePerformInstruction = (props: Props): void => {
 				setReg3,
 				setReg4,
 				setReg5,
+				output: props.output,
+				setOutput: props.setOutput,
 				fullInput: props.fullInput,
 				program: props.program,
 				readFromInput: props.readFromInput,
-				writeToOutput: props.writeToOutput,
+				writeToOutput: (x) => (bufferedOutput += String.fromCharCode(x)),
 				isPerformingAllInOne: props.isPerformingAllInOne,
 				useStdin: props.useStdin,
 				isWaitingForInput: props.isWaitingForInput,
@@ -409,15 +414,18 @@ const usePerformInstruction = (props: Props): void => {
 				wasSuccessful: true,
 				shouldContinue: comp.shouldContinue,
 			};
-			props.setIsWaitingForInput(false);
-			props.setPC(pc);
-			props.setReg0(registers[0]!);
-			props.setReg1(registers[1]!);
-			props.setReg2(registers[2]!);
-			props.setReg3(registers[3]!);
-			props.setReg4(registers[4]!);
-			props.setReg5(registers[5]!);
-			props.setIsStepping(false);
+			if (props.isPerformingAllInOne || props.isStepping) {
+				props.setIsWaitingForInput(false);
+				props.setPC(pc);
+				props.setReg0(registers[0]!);
+				props.setReg1(registers[1]!);
+				props.setReg2(registers[2]!);
+				props.setReg3(registers[3]!);
+				props.setReg4(registers[4]!);
+				props.setReg5(registers[5]!);
+				props.setIsStepping(false);
+				props.setOutput(bufferedOutput);
+			}
 			break;
 		}
 		if (!isEqual(interpretResult.current, props.interpretResult)) {

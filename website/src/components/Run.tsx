@@ -46,7 +46,7 @@ const Run = (props: Props) => {
 	const [reg4, setReg4] = useState(0);
 	const [reg5, setReg5] = useState(0);
 	const [pc, setPC] = useState(0);
-	const output = useRef('');
+	const [output, setOutput] = useState('');
 	const [useStdin, setUseStdin] = useState(false);
 	const [stdin, setStdin] = useState('');
 	const [bufferedStdin, setBufferedStdin] = useState('');
@@ -91,7 +91,6 @@ const Run = (props: Props) => {
 			inputNumber.current = [];
 		}
 	}, [props]);
-
 	inputNumber.current = [...originalInputNumber.current];
 	useBytecodeInterpreter({
 		setReg0,
@@ -102,9 +101,11 @@ const Run = (props: Props) => {
 		setReg5,
 		setPC,
 		isWaitingForInput,
+		output,
+		setOutput,
+		writeToOutput: (_d) => void 0,
 		setIsWaitingForInput,
 		useStdin,
-		writeToOutput: (x) => (output.current += String.fromCharCode(x)),
 		fullInput: inputNumber.current,
 		interpretResult,
 		setInterpretResult,
@@ -130,6 +131,7 @@ const Run = (props: Props) => {
 		setIsStepping,
 		isPerformingAllInOne,
 	});
+
 	if (performInstructionResult.errorType === 'not-enough-input' && useStdin) {
 		inputNumber.current = [...originalInputNumber.current];
 	}
@@ -144,6 +146,7 @@ const Run = (props: Props) => {
 			setIsPerformingAllInOne(false);
 		}
 	}
+
 	if (!props.input.wasSuccessful) {
 		return (
 			<div>
@@ -184,7 +187,7 @@ const Run = (props: Props) => {
 						setReg3(0);
 						setReg4(0);
 						setReg5(0);
-						output.current = '';
+						setOutput('');
 						inputNumber.current = [...originalInputNumber.current];
 					}
 					if (!isStepping) {
@@ -236,7 +239,7 @@ const Run = (props: Props) => {
 			<p>
 				Output:
 				<br />
-				{output.current}
+				{output}
 			</p>
 		</div>
 	);

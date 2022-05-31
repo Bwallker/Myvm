@@ -61,7 +61,7 @@ output_reg = {^"output" | ^"out" | ^"o"}
 
 instruction = ${nop | j | jez | jnz | jgez |jgz | jlez | jlz | literal | add | sub | or | nor | xor | xnor | and | nand | mov}
 empty = {COMMENT? ~ (WHITE_SPACE | NEWLINE)+}
-action = {constant | macro_call | full_macro | instruction | label | use_label_or_const | empty}
+action = {instruction | constant | macro_call | full_macro | label | use_label_or_const | empty}
 
 label = {WHITE_SPACE* ~ ^"label" ~ identifier ~ ":" ~ end_of_line}
 identifier = ${WHITE_SPACE* ~ (ASCII_ALPHA | ident_allowed_special_chars) ~ (ASCII_ALPHANUMERIC | ident_allowed_special_chars)*}
