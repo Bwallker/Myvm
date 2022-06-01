@@ -19,8 +19,12 @@ const MyvmEditor = (props: Props) => {
 			monaco.languages.register({ id: 'myvm' });
 			// Register a tokens provider for the language
 			monaco.languages.setMonarchTokensProvider('myvm', {
+				defaultToken: '',
+				tokenPostfix: '',
 				tokenizer: {
 					root: [
+						{ include: '@whitespace' },
+
 						[/[mM][aA][cC][rR][oO]\s+/, 'macroKeyword'],
 						[/[eE][nN][dD]_[mM][aA][cC][rR][oO]:(?=(\W|$))/g, 'endMacro'],
 						[/%[a-zA-Z]\w*/, 'macroArg'],
@@ -62,8 +66,16 @@ const MyvmEditor = (props: Props) => {
 
 						[/(?<=\W|^)([A-Za-z])\w+/, 'ident'],
 						[/'(.|\\n|\\t|\\r|\\0)'(?=(\W|$))/g, 'charLiteral'],
-						[/\/\/.*/g, 'lineComment'],
-						[/\/\*(\*(?!\/)|[^*])*\*\//g, 'blockComment'],
+					],
+					whitespace: [
+						[/\/\*/, 'comment', '@comment'],
+						[/\/\/.*$/, 'comment'],
+					],
+
+					comment: [
+						[/[^/*]+/, 'comment'],
+						[/\*\//, 'comment', '@pop'],
+						[/[/*]/, 'comment'],
 					],
 				},
 			});
@@ -77,6 +89,8 @@ const MyvmEditor = (props: Props) => {
 				base: 'vs-dark',
 				inherit: false,
 				rules: [
+					{ token: 'comment', ...commentStyling },
+
 					{ token: 'program', foreground: '777777', fontStyle: 'bold' },
 					{ token: 'inputs', foreground: '777777', fontStyle: 'bold' },
 					{ token: 'add', foreground: '008800', fontStyle: 'bold' },
@@ -108,9 +122,6 @@ const MyvmEditor = (props: Props) => {
 					{ token: 'macroArg', foreground: 'aabbcc', fontStyle: 'bold' },
 					{ token: 'macroKeyword', foreground: 'ccbbaa', fontStyle: 'bold' },
 					{ token: 'endMacro', foreground: 'abcabc', fontStyle: 'bold' },
-
-					{ token: 'blockComment', ...commentStyling },
-					{ token: 'lineComment', ...commentStyling },
 
 					{ token: 'in', ...ioStyling },
 					{ token: 'out', ...ioStyling },
