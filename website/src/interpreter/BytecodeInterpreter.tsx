@@ -14,6 +14,8 @@ interface Props {
 	isWaitingForInput: boolean;
 	setIsWaitingForInput: Setter<boolean>;
 	writeToOutput: (_newestEntry: number) => void;
+	output: string;
+	setOutput: Setter<string>;
 	readFromInput: () => number | undefined;
 	fullInput: number[];
 	program: number[];
@@ -374,6 +376,8 @@ const usePerformInstruction = (props: Props): void => {
 				setPerformInstructionResult: props.setPerformInstructionResult,
 				isStepping: props.isStepping,
 				setIsStepping: props.setIsStepping,
+				output: props.output,
+				setOutput: props.setOutput,
 			});
 			lastProgram.current = props.program;
 			lastInput.current = props.fullInput;
@@ -422,10 +426,6 @@ const usePerformInstruction = (props: Props): void => {
 				props.setReg4(registers[4]!);
 				props.setReg5(registers[5]!);
 				props.setIsStepping(false);
-				const output = document.getElementById('output')!;
-				const encoder = new TextEncoder();
-				const encoded = encoder.encode(output.innerText);
-				const encodedNum = [...encoded];
 				switch (true) {
 					case bufferedOutput.current.length === 1 &&
 						(bufferedOutput.current[0]! & 0b10_00_00_00) === 0b00_00_00_00:
@@ -435,10 +435,12 @@ const usePerformInstruction = (props: Props): void => {
 						(bufferedOutput.current[0]! & 0b1111_0000) === 0b1110_0000:
 					case bufferedOutput.current.length === 4 &&
 						(bufferedOutput.current[0]! & 0b11111_000) === 0b11110_000: {
-						encodedNum.push(...bufferedOutput.current);
 						const decoder = new TextDecoder();
-						const asStr = decoder.decode(new Uint8Array(encodedNum));
-						output.innerText = asStr;
+						const asStr = decoder.decode(
+							new Uint8Array(bufferedOutput.current),
+						);
+						props.setOutput(props.output + asStr);
+						bufferedOutput.current = [];
 						break;
 					}
 					case bufferedOutput.current.length >= 4: {
@@ -449,7 +451,7 @@ const usePerformInstruction = (props: Props): void => {
 							wasSuccessful: false,
 							shouldContinue: false,
 						});
-						output.innerText = '';
+						bufferedOutput.current = [];
 						break;
 					}
 					default:
