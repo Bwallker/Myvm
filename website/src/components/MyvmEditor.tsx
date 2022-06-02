@@ -1,6 +1,6 @@
 import Editor, { loader, OnChange } from '@monaco-editor/react';
 import { CSSProperties, useEffect } from 'react';
-import HelloWorld from '../../myvm_examples/hello_world';
+import HelloWorld from '../../myvm_examples/HelloWorld';
 import useWindowDimensions from '../util/useWindowDimensions';
 
 interface Props {

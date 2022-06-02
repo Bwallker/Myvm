@@ -1,5 +1,5 @@
-const PrintNumbers = `
-program:
+const PrintNumbers = `program:
+
 reset_to_zero
 j
 label loop:

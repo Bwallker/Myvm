@@ -1,8 +1,8 @@
 import type { NextPage } from 'next';
 import AssembleInput from '../components/Assemble';
 import { useEffect, useState } from 'react';
-import HelloWorld from '../../myvm_examples/hello_world';
-import PrintNumbers from '../../myvm_examples/print_numbers';
+import HelloWorld from '../../myvm_examples/HelloWorld';
+import PrintNumbers from '../../myvm_examples/PrintNumbers';
 import { Tab, TabList, TabPanel, Tabs } from 'react-tabs';
 import Run from '../components/Run';
 import UseWasm from '../util/UseWasm';
@@ -11,10 +11,12 @@ import Head from 'next/head';
 import Select from 'react-select';
 import MyvmEditor from '../components/MyvmEditor';
 import { Button } from 'react-bootstrap';
+import PrintEmoji from '../../myvm_examples/PrintEmoji';
 
 const selectedProgramOptions = [
 	{ label: 'Hello World', value: 'hello-world' },
 	{ label: 'Print Numbers', value: 'print-numbers' },
+	{ label: 'Print Emoji', value: 'print-emoji' },
 	{ label: 'Custom', value: 'custom' },
 ] as const;
 
@@ -55,6 +57,8 @@ const Home: NextPage = () => {
 									setContents(HelloWorld);
 								} else if (v.value === 'print-numbers') {
 									setContents(PrintNumbers);
+								} else if (v.value === 'print-emoji') {
+									setContents(PrintEmoji);
 								}
 							}}
 							onMenuClose={() => setMenuIsOpen(false)}

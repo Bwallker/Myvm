@@ -1,5 +1,4 @@
-const Hello_world = `
-program:
+const HelloWorld = `program:
 
 macro output_literal(%literal): // I am a comment at the end of a macro definition
     %literal
@@ -55,4 +54,4 @@ end_macro:
     output_literal(exclamation_mark)
 `;
 
-export default Hello_world;
+export default HelloWorld;

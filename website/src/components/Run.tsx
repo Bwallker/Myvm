@@ -237,9 +237,10 @@ const Run = (props: Props) => {
 				Submit stdin:
 			</Button>
 			<p>Output:</p>
-			<p>{output}</p>
+			<p>
+				<pre>{output}</pre>
+			</p>
 		</div>
 	);
 };
-
 export default Run;
