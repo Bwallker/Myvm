@@ -33,3 +33,4 @@ Here are the some things that are yet to be added/fixed. Pull requests are welco
 - Replace favicon with a proper logo.
 - Fix needing a newline after a comment if it's the last thing in your program. (Lexer bug, should be a fairly easy change in grammar.pest)
 - Improve performance of TS runtime. Currently no real effort has been put into making it fast.
+- Add better error messages to the parser.
