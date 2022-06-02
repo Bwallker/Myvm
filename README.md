@@ -5,6 +5,11 @@ VM and assembler loosly inspired by the OVERTURE architecture featured in the ga
 ## Overview
 This repo is divided into 2 parts. The original parser and runtime written in Rust, and the website that uses the orignal parsers alongside its own runtime in order to dynamically run your programs.
 
+## Use Cases
+Might be useful for learning Assembler, or for learning about how ASCII/Utf-8 work.
+
+I created this mostly for fun.
+
 ## Website
 
 ### Features
