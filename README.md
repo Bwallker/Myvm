@@ -33,7 +33,6 @@ I created this mostly for fun.
 - Assemble, Assemble and run, or Run your programs.
 - Use dynamic input with stdin or read your input from a file or directly from the program.
 - Runtime is much faster.
-- Haven't tested emoji support. Might not work.
 
 ## TODO
 
@@ -42,8 +41,6 @@ would like to add.
 
 - Add debugger to website so can insert breakpoints and view which row in your source code is currently being executed.
 - Replace favicon with a proper logo.
-- Fix needing a newline after a comment if it's the last thing in your program. (Lexer bug, should be a fairly easy
-  change in grammar.pest)
 - Improve performance of TS runtime. Currently, no real effort has been put into making it fast.
 - Add better error messages to the parser.
 - A "maximum update depth exceeded" error gets printed to the console whenever you run your program. Someone who knows
