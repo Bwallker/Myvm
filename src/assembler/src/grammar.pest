@@ -1,7 +1,7 @@
 /// Link to docs: https://docs.rs/pest_derive/2.1.0/pest_derive/
 /// Link to book: https://pest.rs/book/
 WHITESPACE = _{" " | "\t"}
-COMMENT = _{WHITE_SPACE* ~ (("/*" ~ (!("*/") ~ ANY)* ~ "*/") | ("//" ~ (!(NEWLINE) ~ ANY)* ~ &NEWLINE))}
+COMMENT = _{WHITE_SPACE* ~ (("/*" ~ (!("*/") ~ ANY)* ~ "*/") | ("//" ~ (!(NEWLINE) ~ ANY)* ~ &(NEWLINE | EOI)))}
 
 file = {SOI ~ WHITE_SPACE* ~ inputs ~ program ~ WHITE_SPACE* ~ EOI}
 program = {start_of_program ~ action+}
