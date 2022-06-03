@@ -48,6 +48,7 @@ const Home: NextPage = () => {
 					<div className={'row row-cols-auto'}>
 						<Select
 							value={selectedProgram}
+							instanceId={'selected-program-select'}
 							onChange={(v) => {
 								if (v === null) {
 									return;
@@ -71,7 +72,7 @@ const Home: NextPage = () => {
 							theme={(theme) => ({
 								...theme,
 								colors: {
-									/* Dark mode theme for select*/
+									/* Dark mode theme for select */
 									danger: '#DE350B',
 									dangerLight: '#FFBDAD',
 									neutral90: 'hsl(0, 0%, 100%)',

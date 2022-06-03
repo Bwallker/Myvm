@@ -237,9 +237,7 @@ const Run = (props: Props) => {
 				Submit stdin:
 			</Button>
 			<p>Output:</p>
-			<p>
-				<pre>{output}</pre>
-			</p>
+			<pre id='output'>{output}</pre>
 		</div>
 	);
 };
