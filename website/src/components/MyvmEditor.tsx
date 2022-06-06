@@ -26,7 +26,7 @@ const MyvmEditor = (props: Props) => {
 						{ include: '@whitespace' },
 
 						[/[mM][aA][cC][rR][oO]\s+/, 'macroKeyword'],
-						[/[eE][nN][dD]_[mM][aA][cC][rR][oO]:(?=(\W|$))/g, 'endMacro'],
+						[/[eE][nN][dD]_[mM][aA][cC][rR][oO]:/g, 'endMacro'],
 						[/%[a-zA-Z]\w*/, 'macroArg'],
 						[/0[xX][\da-fA-F]+/, 'hexLiteral'],
 						[/0[bB][01]+/, 'binLiteral'],

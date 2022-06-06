@@ -18,10 +18,7 @@ add
 mov 3 o
 // Third byte is 0x98, which is 152 in decimal.
 // We add 32 to reg1 to get there.
-32
-mov 0 2
-add
-mov 3 o
+32 mov 0 2 add mov 3 o
 // Fourth byte is 0x80, which is 128 in decimal.
 // We add 8 to 120 to get there.
 8

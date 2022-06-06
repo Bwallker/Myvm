@@ -151,7 +151,7 @@ const Run = (props: Props) => {
 		return (
 			<div>
 				<h1>Your input could not be parsed! Here is the error!</h1>
-				<p>{props.input.error}</p>
+				<pre>{props.input.error}</pre>
 			</div>
 		);
 	}
@@ -166,11 +166,11 @@ const Run = (props: Props) => {
 				<h1>Error:</h1>
 				<br />
 				<br />
-				<p>
+				<pre>
 					{!interpretResult.wasSuccessful
 						? interpretResult.error
 						: performInstructionResult.error}
-				</p>
+				</pre>
 			</div>
 		);
 	}
